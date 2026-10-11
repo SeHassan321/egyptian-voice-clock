@@ -5,4 +5,121 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="AppTitle" xml:space="preserve"><value>الساعة الناطقة</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>إلغاء</value></data>
+  <data name="Common_Ok" xml:space="preserve"><value>تمام</value></data>
+  <data name="Common_Error_Title" xml:space="preserve"><value>حصلت مشكلة</value></data>
+  <data name="Common_Error_Message" xml:space="preserve"><value>حصلت مشكلة غير متوقعة. جرّب تاني.</value></data>
+  <data name="Main_Announce_Description" xml:space="preserve"><value>قول الساعة كام</value></data>
+  <data name="Main_Announce_Hint" xml:space="preserve"><value>دوسة واحدة والتليفون يقولك الساعة كام</value></data>
+  <data name="Main_Repeat_Description" xml:space="preserve"><value>قولها تاني</value></data>
+  <data name="Main_VolumeUp_Description" xml:space="preserve"><value>علّي الصوت</value></data>
+  <data name="Main_VolumeDown_Description" xml:space="preserve"><value>وطّي الصوت</value></data>
+  <data name="Main_Setup_Description" xml:space="preserve"><value>الإعدادات والتسجيل</value></data>
+  <data name="Main_Status_SetupIncomplete" xml:space="preserve"><value>لسه فيه {0} تسجيل ناقص. افتح الإعدادات وكمّل التسجيل.</value></data>
+  <data name="Main_Status_Muted" xml:space="preserve"><value>الصوت مقفول. علّي صوت الميديا.</value></data>
+  <data name="Main_Status_Missing" xml:space="preserve"><value>مقدرتش أقول الساعة: فيه تسجيل ناقص.</value></data>
+  <data name="Main_Status_PlaybackFailed" xml:space="preserve"><value>مقدرتش أشغّل الصوت. جرّب تاني.</value></data>
+  <data name="Main_Status_BlockedByCall" xml:space="preserve"><value>مش هينفع أتكلم وانت في مكالمة.</value></data>
+  <data name="Main_Status_Interrupted" xml:space="preserve"><value>الصوت اتقطع.</value></data>
+  <data name="Setup_Title" xml:space="preserve"><value>الإعدادات والتسجيل</value></data>
+  <data name="Setup_Summary" xml:space="preserve"><value>{0} من {1} تسجيل جاهزين</value></data>
+  <data name="Setup_Complete" xml:space="preserve"><value>كل التسجيلات جاهزة ✓</value></data>
+  <data name="Setup_Incomplete" xml:space="preserve"><value>الإعداد لسه ما خلصش</value></data>
+  <data name="Setup_Bundled_Present" xml:space="preserve"><value>الصوت الأساسي اللي نازل مع التطبيق فيه {0} تسجيل.</value></data>
+  <data name="Setup_Bundled_None" xml:space="preserve"><value>التطبيق مفيهوش صوت أساسي، فلازم تسجّل بنفسك.</value></data>
+  <data name="Setup_Bundled_Problem" xml:space="preserve"><value>الصوت الأساسي فيه مشكلة: {0}</value></data>
+  <data name="Setup_Section_Recordings" xml:space="preserve"><value>التسجيلات</value></data>
+  <data name="Setup_OpenRecordings" xml:space="preserve"><value>قايمة التسجيلات</value></data>
+  <data name="Setup_RecordNextMissing" xml:space="preserve"><value>سجّل اللي ناقص</value></data>
+  <data name="Setup_Section_Test" xml:space="preserve"><value>جرّب</value></data>
+  <data name="Setup_TestNow" xml:space="preserve"><value>قول الساعة دلوقتي</value></data>
+  <data name="Setup_TestSelected" xml:space="preserve"><value>قول الوقت ده</value></data>
+  <data name="Setup_TestSegmentsOnly" xml:space="preserve"><value>قوله بالقطع بس</value></data>
+  <data name="Setup_TestHour" xml:space="preserve"><value>الساعة</value></data>
+  <data name="Setup_TestMinute" xml:space="preserve"><value>الدقيقة</value></data>
+  <data name="Setup_TestPm" xml:space="preserve"><value>بعد الضهر</value></data>
+  <data name="Setup_WillSay" xml:space="preserve"><value>هيقول: {0}</value></data>
+  <data name="Setup_Section_Options" xml:space="preserve"><value>اختيارات</value></data>
+  <data name="Setup_IncludeDayPeriod" xml:space="preserve"><value>قول «صباحًا» و«مساءً»</value></data>
+  <data name="Setup_SegmentGap" xml:space="preserve"><value>المسافة بين الكلمات: {0} مللي ثانية</value></data>
+  <data name="Setup_NormalizeLoudness" xml:space="preserve"><value>ساوي علو الصوت بين التسجيلات</value></data>
+  <data name="Setup_UseFullPhrases" xml:space="preserve"><value>استخدم الجمل الكاملة لو متسجّلة</value></data>
+  <data name="Setup_ErrorFeedback" xml:space="preserve"><value>نبّه بصوت واهتزاز لو فيه مشكلة</value></data>
+  <data name="Setup_VolumeGuidance" xml:space="preserve"><value>الساعة بتتكلم على صوت الميديا. لو مش سامع، علّي صوت الميديا.</value></data>
+  <data name="Setup_OpenVolume" xml:space="preserve"><value>اضبط الصوت</value></data>
+  <data name="Setup_Section_Check" xml:space="preserve"><value>مراجعة</value></data>
+  <data name="Setup_CheckEverything" xml:space="preserve"><value>راجع كل الأوقات والتسجيلات</value></data>
+  <data name="Setup_Checking" xml:space="preserve"><value>بيراجع…</value></data>
+  <data name="Setup_Coverage_Complete" xml:space="preserve"><value>تمام ✓ كل الـ{0} وقت هيتقالوا صح.</value></data>
+  <data name="Setup_Coverage_Incomplete" xml:space="preserve"><value>فيه {0} من {1} وقت مش هينفع يتقالوا. مثلًا {2}: ناقص {3}.</value></data>
+  <data name="Setup_Damaged" xml:space="preserve"><value>فيه {0} تسجيل بايظ ومحتاج يتسجّل تاني.</value></data>
+  <data name="Setup_Section_Backup" xml:space="preserve"><value>نسخة احتياطية</value></data>
+  <data name="Setup_ExportBackup" xml:space="preserve"><value>احفظ نسخة من تسجيلاتي</value></data>
+  <data name="Setup_ShareBackup" xml:space="preserve"><value>ابعت نسخة من تسجيلاتي</value></data>
+  <data name="Setup_ImportBackup" xml:space="preserve"><value>رجّع نسخة احتياطية</value></data>
+  <data name="Setup_ExportFullVoice" xml:space="preserve"><value>ابعت الصوت كامل (عشان ينزل مع التطبيق)</value></data>
+  <data name="Setup_Backup_Saved" xml:space="preserve"><value>اتحفظت نسخة فيها {0} تسجيل.</value></data>
+  <data name="Setup_Backup_Empty" xml:space="preserve"><value>مفيش تسجيلات خاصة بيك لسه.</value></data>
+  <data name="Setup_Backup_Cancelled" xml:space="preserve"><value>اتلغى.</value></data>
+  <data name="Setup_Import_ConfirmTitle" xml:space="preserve"><value>رجّع نسخة احتياطية</value></data>
+  <data name="Setup_Import_ConfirmMessage" xml:space="preserve"><value>التسجيلات اللي في النسخة هتحل محل تسجيلاتك لنفس الكلمات. تكمّل؟</value></data>
+  <data name="Setup_Import_Done" xml:space="preserve"><value>اترجّع {0} تسجيل.</value></data>
+  <data name="Setup_Import_MatchedDefault" xml:space="preserve"><value>و{0} تسجيل زي الصوت الأساسي بالظبط.</value></data>
+  <data name="Setup_Import_Skipped" xml:space="preserve"><value>واتجاهل {0} تسجيل فيهم مشكلة.</value></data>
+  <data name="Setup_Import_Rejected" xml:space="preserve"><value>الملف ده مش نسخة احتياطية صالحة.</value></data>
+  <data name="Setup_Version" xml:space="preserve"><value>الإصدار {0}</value></data>
+  <data name="Category_Hour" xml:space="preserve"><value>الساعات</value></data>
+  <data name="Category_RoundMinute" xml:space="preserve"><value>الدقايق المدوّرة</value></data>
+  <data name="Category_ExactMinute" xml:space="preserve"><value>باقي الدقايق</value></data>
+  <data name="Category_DayPeriod" xml:space="preserve"><value>صباحًا ومساءً</value></data>
+  <data name="Category_Feedback" xml:space="preserve"><value>رسالة الخطأ (اختياري)</value></data>
+  <data name="Category_FullPhrase" xml:space="preserve"><value>جمل كاملة (اختياري)</value></data>
+  <data name="Status_User" xml:space="preserve"><value>متسجّل بصوتك</value></data>
+  <data name="Status_Bundled" xml:space="preserve"><value>الصوت الأساسي</value></data>
+  <data name="Status_Missing" xml:space="preserve"><value>ناقص</value></data>
+  <data name="Status_Invalid" xml:space="preserve"><value>بايظ، سجّله تاني</value></data>
+  <data name="Status_Optional" xml:space="preserve"><value>اختياري</value></data>
+  <data name="Recordings_Title" xml:space="preserve"><value>التسجيلات</value></data>
+  <data name="Recordings_Play" xml:space="preserve"><value>اسمع</value></data>
+  <data name="Recordings_Record" xml:space="preserve"><value>سجّل</value></data>
+  <data name="Recordings_RestoreDefault" xml:space="preserve"><value>رجّع الأساسي</value></data>
+  <data name="Recordings_Delete" xml:space="preserve"><value>امسح</value></data>
+  <data name="Recordings_DeleteTitle" xml:space="preserve"><value>مسح التسجيل</value></data>
+  <data name="Recordings_DeleteMessage" xml:space="preserve"><value>تمسح تسجيل «{0}»؟</value></data>
+  <data name="Recordings_RestoreTitle" xml:space="preserve"><value>الرجوع للصوت الأساسي</value></data>
+  <data name="Recordings_RestoreMessage" xml:space="preserve"><value>ترجع للصوت الأساسي في «{0}»؟ تسجيلك هيتمسح.</value></data>
+  <data name="Recordings_AddFullPhrase" xml:space="preserve"><value>سجّل جملة كاملة للوقت ده</value></data>
+  <data name="Recordings_FullPhraseHint" xml:space="preserve"><value>الجملة الكاملة بتتقال بدل القطع في الوقت ده بس، لو القطع مش طالعة طبيعية.</value></data>
+  <data name="Recordings_NothingMissing" xml:space="preserve"><value>مفيش حاجة ناقصة ✓</value></data>
+  <data name="Recorder_Title" xml:space="preserve"><value>تسجيل</value></data>
+  <data name="Recorder_SayThis" xml:space="preserve"><value>قول الجملة دي:</value></data>
+  <data name="Recorder_Start" xml:space="preserve"><value>ابدأ التسجيل</value></data>
+  <data name="Recorder_Stop" xml:space="preserve"><value>وقّف التسجيل</value></data>
+  <data name="Recorder_PlayTake" xml:space="preserve"><value>اسمع التسجيل الجديد</value></data>
+  <data name="Recorder_Save" xml:space="preserve"><value>احفظ</value></data>
+  <data name="Recorder_Discard" xml:space="preserve"><value>امسحه</value></data>
+  <data name="Recorder_PlaySaved" xml:space="preserve"><value>اسمع المحفوظ</value></data>
+  <data name="Recorder_CompareComposed" xml:space="preserve"><value>اسمعها بالقطع</value></data>
+  <data name="Recorder_Next" xml:space="preserve"><value>اللي بعده</value></data>
+  <data name="Recorder_Previous" xml:space="preserve"><value>اللي قبله</value></data>
+  <data name="Recorder_Position" xml:space="preserve"><value>{0} من {1}</value></data>
+  <data name="Recorder_Elapsed" xml:space="preserve"><value>{0:0.0} ثانية</value></data>
+  <data name="Recorder_Recording" xml:space="preserve"><value>بيسجّل… اتكلم دلوقتي</value></data>
+  <data name="Recorder_Take_Ok" xml:space="preserve"><value>التسجيل تمام ✓ اسمعه واحفظه.</value></data>
+  <data name="Recorder_Take_Empty" xml:space="preserve"><value>مفيش تسجيل. جرّب تاني.</value></data>
+  <data name="Recorder_Take_NoSpeech" xml:space="preserve"><value>مفيش صوت واضح. قرّب من المايك وسجّل تاني.</value></data>
+  <data name="Recorder_Take_TooShort" xml:space="preserve"><value>التسجيل قصير أوي. سجّل تاني.</value></data>
+  <data name="Recorder_Take_TooLong" xml:space="preserve"><value>التسجيل طويل أوي. قول الجملة بس.</value></data>
+  <data name="Recorder_Take_TooQuiet" xml:space="preserve"><value>الصوت واطي شوية، بس ينفع.</value></data>
+  <data name="Recorder_Take_Clipped" xml:space="preserve"><value>الصوت عالي أوي ومشوّش شوية. الأحسن تسجّل وانت أبعد عن المايك.</value></data>
+  <data name="Recorder_Saved" xml:space="preserve"><value>اتحفظ ✓</value></data>
+  <data name="Recorder_Busy" xml:space="preserve"><value>استنى لحد ما الصوت اللي شغال يخلص.</value></data>
+  <data name="Recorder_MicUnavailable" xml:space="preserve"><value>المايك مش متاح دلوقتي. اقفل أي تطبيق تاني بيستخدمه وجرّب تاني.</value></data>
+  <data name="Recorder_PermissionDenied" xml:space="preserve"><value>محتاج إذن المايك عشان تسجّل.</value></data>
+  <data name="Recorder_PermissionBlockedTitle" xml:space="preserve"><value>إذن المايك مقفول</value></data>
+  <data name="Recorder_PermissionBlockedMessage" xml:space="preserve"><value>افتح إعدادات التطبيق واسمح باستخدام المايك.</value></data>
+  <data name="Recorder_OpenSettings" xml:space="preserve"><value>افتح الإعدادات</value></data>
+  <data name="Recorder_MaxReached" xml:space="preserve"><value>وصلت لأقصى مدة، فالتسجيل وقف لوحده.</value></data>
+  <data name="Recorder_FullPhraseInfo" xml:space="preserve"><value>الجملة دي هتتقال بدل القطع في الوقت ده بس.</value></data>
+  <data name="Recorder_NotSaved" xml:space="preserve"><value>لسه ما اتحفظش</value></data>
 </root>
