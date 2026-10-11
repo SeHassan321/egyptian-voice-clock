@@ -12,7 +12,7 @@
 
     <ApplicationTitle>الساعة الناطقة</ApplicationTitle>
     <ApplicationId>com.egyptianvoiceclock.app</ApplicationId>
-    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>1.1.0</ApplicationDisplayVersion>
     <!-- CI overrides this with the run number so every build can be installed over the previous one. -->
     <ApplicationVersion>1</ApplicationVersion>
 

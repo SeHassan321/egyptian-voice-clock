@@ -67,6 +67,20 @@ public class AnnouncementServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_playback_failure_never_plays_the_missing_recordings_message()
+    {
+        // Regression: a false playback failure made the app say «فيه تسجيلات ناقصة» after every announcement.
+        await _rig.RecordAsync("hour.02", "minute.40", "feedback.error");
+        _rig.Output.NextOutcome = new PlaybackOutcome(PlaybackOutcomeKind.Failed, "test");
+
+        var result = await _rig.Announcer.AnnounceAsync(new TimeOnly(1, 40));
+
+        Assert.Equal(AnnouncementStatus.PlaybackFailed, result.Status);
+        Assert.Single(_rig.Output.Played);       // only the announcement itself
+        Assert.Equal(1, _rig.Feedback.Errors);   // beep and vibration instead
+    }
+
+    [Fact]
     public async Task Error_feedback_can_be_turned_off()
     {
         await _rig.UpdateSettingsAsync(s => s with { PlayErrorFeedback = false });

@@ -115,6 +115,74 @@ public class VoiceAssetRepositoryTests : IDisposable
         Assert.Equal(original.Samples, (await repo.LoadAsync("hour.03"))!.Samples);
     }
 
+    /// <summary>A clip as build 1 stored it: 800 ms of rumble before the word, and no processing version.</summary>
+    private async Task<byte[]> WriteBuild1ClipAsync(string id, bool withOldManifest)
+    {
+        var rumble = Signals.Tone(800, peakDbfs: -28, frequency: 50);
+        var audio = Signals.Concat(rumble, Signals.Tone(600, peakDbfs: -8, frequency: 300), Signals.Silence(100));
+        var bytes = WavCodec.Encode(audio);
+        Directory.CreateDirectory(_locations.UserClipsDirectory);
+        await File.WriteAllBytesAsync(Path.Combine(_locations.UserClipsDirectory, id + ".wav"), bytes);
+        if (withOldManifest)
+        {
+            await File.WriteAllTextAsync(
+                _locations.ManifestPath,
+                "{\"schemaVersion\":1,\"clips\":{\"" + id + "\":{\"file\":\"user/" + id + ".wav\",\"category\":\"ExactMinute\",\"status\":\"recorded\",\"recordedAtUtc\":\"2026-10-11T21:00:00+00:00\",\"durationMs\":1500}}}");
+        }
+
+        return bytes;
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Recordings_from_an_older_build_are_cleaned_when_loaded_without_changing_the_file(bool withOldManifest)
+    {
+        var original = await WriteBuild1ClipAsync("minute.43", withOldManifest);
+
+        var repo = NewRepository();
+        var loaded = (await repo.LoadAsync("minute.43"))!;
+
+        // The 800 ms rumble lead is gone (about 40 ms of lead-in remains) ...
+        var expected = 44100 * (600 + 40 + 110) / 1000;
+        Assert.InRange(loaded.SampleCount, expected - 1323, expected + 1323);
+        // ... and the stored recording is untouched.
+        Assert.Equal(original, await File.ReadAllBytesAsync(Path.Combine(_locations.UserClipsDirectory, "minute.43.wav")));
+        Assert.Equal(AssetSource.User, repo.GetStatus("minute.43").Source);
+    }
+
+    [Fact]
+    public async Task Recordings_made_now_are_not_processed_again()
+    {
+        var take = ClipProcessor.Process(Signals.Word()).Audio;
+        await NewRepository().SaveUserClipAsync("minute.07", take);
+
+        var loaded = (await NewRepository().LoadAsync("minute.07"))!;
+
+        Assert.Equal(take.Samples, loaded.Samples);
+        var manifest = JsonNode.Parse(await File.ReadAllTextAsync(_locations.ManifestPath))!;
+        Assert.Equal(ClipProcessor.Version, manifest["clips"]!["minute.07"]!["processingVersion"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task Bundled_voice_is_prepared_again_when_the_processing_improves()
+    {
+        var source = new FakeBundledSource(PackBuilder.Build(["hour.06"]));
+        await NewRepository(source).InitializeAsync();
+        var indexPath = Path.Combine(_locations.BundledClipsDirectory, "index.json");
+        var index = JsonNode.Parse(await File.ReadAllTextAsync(indexPath))!.AsObject();
+        Assert.Equal(ClipProcessor.Version, index["processingVersion"]!.GetValue<int>());
+
+        // Same app build, but prepared by an older processing version.
+        index["processingVersion"] = ClipProcessor.Version - 1;
+        await File.WriteAllTextAsync(indexPath, index.ToJsonString());
+        var repo = NewRepository(source);
+        await repo.InitializeAsync();
+
+        Assert.Equal(2, source.OpenCount);
+        Assert.True(repo.IsAvailable("hour.06"));
+    }
+
     [Fact]
     public async Task Unknown_ids_and_empty_audio_are_rejected()
     {

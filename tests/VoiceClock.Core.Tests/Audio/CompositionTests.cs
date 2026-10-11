@@ -80,10 +80,11 @@ public class CompositionTests
     [Fact]
     public void Normalization_never_boosts_more_than_the_limit()
     {
-        // Speech peaking at -36 dBFS (about -39 dBFS RMS) would need +19 dB; it gets the 12 dB maximum.
+        // Speech peaking around -36 dBFS (about -39 dBFS RMS) would need +19 dB; it gets the 12 dB maximum.
         var veryQuiet = ClipProcessor.Process(Signals.Word(peakDbfs: -36)).Audio;
-        var after = ClipAnalyzer.Analyze(LoudnessNormalizer.Normalize(veryQuiet));
-        Assert.InRange(after.PeakDbfs, -36 + 11.5, -36 + 12.5);
+        var before = ClipAnalyzer.Analyze(veryQuiet).PeakDbfs;
+        var after = ClipAnalyzer.Analyze(LoudnessNormalizer.Normalize(veryQuiet)).PeakDbfs;
+        Assert.Equal(12.0, after - before, tolerance: 0.2);
     }
 
     [Fact]

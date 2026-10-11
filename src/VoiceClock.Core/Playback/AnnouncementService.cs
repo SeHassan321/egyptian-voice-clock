@@ -141,7 +141,7 @@ public sealed class AnnouncementService : IAnnouncementService
             if (!resolved.IsPlayable)
             {
                 _log.Warn($"Cannot speak {plan}: missing {string.Join(", ", resolved.MissingAssetIds)}");
-                await SignalErrorAsync(settings, token).ConfigureAwait(false);
+                await SignalErrorAsync(settings, missingRecordings: true, token).ConfigureAwait(false);
                 return new AnnouncementResult(AnnouncementStatus.MissingRecordings, plan, [], resolved.MissingAssetIds);
             }
 
@@ -254,14 +254,17 @@ public sealed class AnnouncementService : IAnnouncementService
         if (status == AnnouncementStatus.PlaybackFailed)
         {
             _log.Warn($"Playback failed: {outcome.Kind} {outcome.Detail}");
-            await SignalErrorAsync(settings, CancellationToken.None).ConfigureAwait(false);
+            await SignalErrorAsync(settings, missingRecordings: false, CancellationToken.None).ConfigureAwait(false);
         }
 
         return AnnouncementResult.Simple(status, plan, outcome.Detail);
     }
 
-    /// <summary>Plays the owner's recorded error message if there is one, otherwise a beep and vibration.</summary>
-    private async Task SignalErrorAsync(AppSettings settings, CancellationToken token)
+    /// <summary>
+    /// Signals that the time could not be spoken. The owner's recorded message («فيه تسجيلات ناقصة»)
+    /// is used only when recordings are really missing; any other problem gets a beep and vibration.
+    /// </summary>
+    private async Task SignalErrorAsync(AppSettings settings, bool missingRecordings, CancellationToken token)
     {
         if (!settings.PlayErrorFeedback)
         {
@@ -270,7 +273,8 @@ public sealed class AnnouncementService : IAnnouncementService
 
         try
         {
-            if (_repository.IsAvailable(AssetIds.FeedbackError) &&
+            if (missingRecordings &&
+                _repository.IsAvailable(AssetIds.FeedbackError) &&
                 await _repository.LoadAsync(AssetIds.FeedbackError, token).ConfigureAwait(false) is { } message)
             {
                 var outcome = await _output.PlayAsync(AnnouncementComposer.Compose([message], CompositionFor(settings)), token).ConfigureAwait(false);

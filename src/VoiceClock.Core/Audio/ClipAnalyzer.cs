@@ -39,6 +39,11 @@ public static class ClipAnalyzer
     /// <summary>Window run length used to tell sustained voice from isolated clicks.</summary>
     private const int SustainWindows = 4;
 
+    private const double PreEmphasis = 0.95;
+
+    /// <summary>Lower edge of the band used to find the voice (rumble and hum lie below it).</summary>
+    private const double DetectionBandHz = 300;
+
     public static ClipAnalysis Analyze(PcmAudio audio)
     {
         ArgumentNullException.ThrowIfNull(audio);
@@ -49,17 +54,26 @@ public static class ClipAnalyzer
             return new ClipAnalysis(TimeSpan.Zero, AudioMath.SilenceDbfs, 0, false, 0, 0, AudioMath.SilenceDbfs, AudioMath.SilenceDbfs);
         }
 
+        // Speech is detected in the voice band only: background rumble and hum (mostly below 300 Hz)
+        // would otherwise look like quiet speech, and how much of it there is varies from clip to clip.
+        var voiceBand = audio.SampleRate > 4 * DetectionBandHz ? HighPassFilter.Apply(audio, DetectionBandHz).Samples : samples;
+
         var window = Math.Max(1, AudioMath.MsToSamples(audio.SampleRate, WindowMilliseconds));
         var windowCount = (n + window - 1) / window;
         var rms = new double[windowCount];
+        var voice = new double[windowCount];
+        var hf = new double[windowCount];
         var peak = 0;
         long clipped = 0;
+        double previous = samples[0];
 
         for (var w = 0; w < windowCount; w++)
         {
             var start = w * window;
             var end = Math.Min(n, start + window);
             double sumSquares = 0;
+            double voiceSquares = 0;
+            double hfSquares = 0;
             for (var i = start; i < end; i++)
             {
                 int s = samples[i];
@@ -75,31 +89,49 @@ public static class ClipAnalyzer
                 }
 
                 sumSquares += (double)s * s;
+                voiceSquares += (double)voiceBand[i] * voiceBand[i];
+
+                // Pre-emphasis keeps the hiss of consonants such as س ص ش ف while suppressing rumble.
+                var emphasized = s - (PreEmphasis * previous);
+                hfSquares += emphasized * emphasized;
+                previous = s;
             }
 
             rms[w] = Math.Sqrt(sumSquares / (end - start));
+            voice[w] = Math.Sqrt(voiceSquares / (end - start));
+            hf[w] = Math.Sqrt(hfSquares / (end - start));
         }
 
-        var sorted = (double[])rms.Clone();
-        Array.Sort(sorted);
-        var noiseFloor = sorted[(int)(windowCount * 0.1)];
-        var loudest = sorted[^1];
+        var silence = AudioMath.FromDbfs(AbsoluteSilenceDbfs);
+        var (noiseFloor, loudest) = FloorAndPeak(rms);
+        var (voiceFloor, voiceLoudest) = FloorAndPeak(voice);
+        var (hfFloor, hfLoudest) = FloorAndPeak(hf);
 
         // A window is "voice" when it is well above the background, but never demand more than
         // 15 dB below the loudest window, so soft word endings are kept.
-        var threshold = Math.Max(AudioMath.FromDbfs(AbsoluteSilenceDbfs), noiseFloor * 3.0);
-        threshold = Math.Min(threshold, loudest * 0.18);
-        threshold = Math.Max(threshold, AudioMath.FromDbfs(AbsoluteSilenceDbfs));
+        var threshold = Math.Max(silence, Math.Min(Math.Max(silence, voiceFloor * 3.0), voiceLoudest * 0.18));
+
+        // Consonant hiss is quiet overall but stands far above low-frequency background noise in the
+        // emphasized signal, so it is detected separately (never stricter than 20 dB below its peak).
+        var hfThreshold = Math.Max(silence, Math.Min(Math.Max(silence, hfFloor * 3.16), hfLoudest * 0.1));
 
         var isActive = new bool[windowCount];
-        int active = 0;
+        int active = 0, voiced = 0;
         double speechSquares = 0;
         for (var w = 0; w < windowCount; w++)
         {
-            if (rms[w] >= threshold)
+            var loud = voice[w] >= threshold;
+            if (loud || hf[w] >= hfThreshold)
             {
                 isActive[w] = true;
                 active++;
+            }
+
+            // The speech level (used to even out loudness) comes from the voiced core only:
+            // windows within 20 dB of the loudest, so breaths and consonants do not skew it.
+            if (loud && voice[w] >= voiceLoudest * 0.1)
+            {
+                voiced++;
                 speechSquares += rms[w] * rms[w];
             }
         }
@@ -126,7 +158,7 @@ public static class ClipAnalyzer
         var hasSpeech = loudest >= AudioMath.FromDbfs(MinimumSpeechLevelDbfs) && active >= MinimumSpeechWindows && first >= 0 && last >= first;
         var speechStart = hasSpeech ? first * window : 0;
         var speechEnd = hasSpeech ? Math.Min(n, (last + 1) * window) : 0;
-        var speechRms = hasSpeech ? Math.Sqrt(speechSquares / active) : 0;
+        var speechRms = hasSpeech && voiced > 0 ? Math.Sqrt(speechSquares / voiced) : 0;
 
         return new ClipAnalysis(
             audio.Duration,
@@ -137,6 +169,14 @@ public static class ClipAnalyzer
             speechEnd,
             AudioMath.ToDbfs(speechRms),
             AudioMath.ToDbfs(noiseFloor));
+    }
+
+    /// <summary>The background level (10th percentile) and the loudest window.</summary>
+    private static (double Floor, double Peak) FloorAndPeak(double[] levels)
+    {
+        var sorted = (double[])levels.Clone();
+        Array.Sort(sorted);
+        return (sorted[(int)(sorted.Length * 0.1)], sorted[^1]);
     }
 
     private static int CountActive(bool[] active, int from, int to)

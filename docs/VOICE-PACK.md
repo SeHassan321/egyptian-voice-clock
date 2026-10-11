@@ -1,5 +1,9 @@
 # The default voice (voice pack)
 
+**Current default voice:** Hassan's recordings from 12 October 2026 (73 clips: all 71 required plus
+«صباحًا» and «مساءً»), in `src/VoiceClock.App/Resources/Raw/voicepack.zip`. The test
+`BundledVoicePackTests` fails the build if this file is ever incomplete or damaged.
+
 The app ships with a default voice recorded by the owner. Anyone can still re-record any clip on
 their own phone; their recording takes priority, and «رجّع الأساسي» (restore default) brings the
 shipped clip back.
@@ -54,6 +58,12 @@ clips/minute.43.wav
 ```
 
 Audio is mono 16-bit PCM WAV (44.1 kHz when recorded by the app).
+
+When the app prepares the bundled voice (once per app build), each clip goes through the same
+cleaning as a new recording: an 80 Hz low-cut filter removes rumble and mains hum, and silence or
+noise before and after the voice is trimmed to about 40 ms / 110 ms, keeping soft consonants such as
+the «ص» in «صباحًا». Recordings stored on a phone by an older build are cleaned the same way when
+they are loaded; the stored files are never modified.
 
 ## Validation on import
 

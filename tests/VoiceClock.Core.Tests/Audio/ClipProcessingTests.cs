@@ -43,6 +43,56 @@ public class ClipProcessingTests
     }
 
     [Fact]
+    public void Low_frequency_rumble_before_a_word_is_removed_and_trimmed()
+    {
+        // 800 ms of 25 Hz + 50 Hz rumble with faint room noise (like the owner's minute recordings), then the word.
+        var rumble = Signals.Mix(Signals.Tone(2000, peakDbfs: -26, frequency: 25), Signals.Tone(2000, peakDbfs: -30, frequency: 50));
+        var speech = Signals.Concat(Signals.Silence(800), Signals.Tone(700, peakDbfs: -8, frequency: 300), Signals.Silence(500));
+        var clip = Signals.Mix(Signals.Mix(rumble, speech), Signals.Noise(2000, peakDbfs: -62));
+
+        var result = ClipProcessor.Process(clip);
+
+        Assert.True(result.IsValid);
+        var expected = Ms(700 + ClipProcessingOptions.Default.LeadPaddingMs + ClipProcessingOptions.Default.TailPaddingMs);
+        Assert.InRange(result.Audio.SampleCount, expected - (3 * Window), expected + (3 * Window));
+        Assert.True(ClipAnalyzer.Analyze(result.Audio.Slice(Ms(5), Ms(30))).PeakDbfs < -40, "rumble left in the lead-in");
+    }
+
+    [Fact]
+    public void A_soft_hissing_consonant_at_the_start_of_a_word_is_kept()
+    {
+        // "صباحًا": ~120 ms of quiet hiss before the vowel, over rumble that is louder than the hiss.
+        var rumble = Signals.Tone(2000, peakDbfs: -30, frequency: 40);
+        var word = Signals.Concat(Signals.Silence(600), Signals.Hiss(120, rmsDbfs: -40), Signals.Tone(500, peakDbfs: -8, frequency: 250), Signals.Silence(780));
+        var clip = Signals.Mix(rumble, word);
+
+        var analysis = ClipAnalyzer.Analyze(HighPassFilter.Apply(clip));
+
+        Assert.True(analysis.HasSpeech);
+        Assert.InRange(analysis.SpeechStartSample, Ms(600) - Window, Ms(600) + (2 * Window));
+    }
+
+    [Fact]
+    public void A_soft_hissing_consonant_at_the_end_of_a_word_is_kept()
+    {
+        // "ونص": vowel then ~150 ms of quiet hiss.
+        var clip = Signals.Concat(Signals.Silence(300), Signals.Tone(400, peakDbfs: -8, frequency: 250), Signals.Hiss(150, rmsDbfs: -42), Signals.Silence(400));
+
+        var analysis = ClipAnalyzer.Analyze(clip);
+
+        Assert.InRange(analysis.SpeechEndSample, Ms(850) - (2 * Window), Ms(850) + Window);
+    }
+
+    [Fact]
+    public void Speech_level_ignores_the_quiet_consonants()
+    {
+        var vowelOnly = ClipAnalyzer.Analyze(Signals.Concat(Signals.Silence(200), Signals.Tone(500, peakDbfs: -8), Signals.Silence(200)));
+        var withHiss = ClipAnalyzer.Analyze(Signals.Concat(Signals.Silence(200), Signals.Hiss(150, rmsDbfs: -40), Signals.Tone(500, peakDbfs: -8), Signals.Silence(200)));
+
+        Assert.Equal(vowelOnly.SpeechRmsDbfs, withHiss.SpeechRmsDbfs, tolerance: 0.3);
+    }
+
+    [Fact]
     public void Silence_and_faint_hiss_are_not_speech()
     {
         Assert.False(ClipAnalyzer.Analyze(Signals.Silence(1000)).HasSpeech);
@@ -64,19 +114,22 @@ public class ClipProcessingTests
     [Fact]
     public void Processing_never_cuts_into_the_speech_itself()
     {
-        var speech = Signals.Tone(600, peakDbfs: -10);
-        var result = ClipProcessor.Process(Signals.Concat(Signals.Noise(300), speech, Signals.Noise(300, seed: 3)));
+        var clip = Signals.Concat(Signals.Noise(300), Signals.Tone(600, peakDbfs: -10), Signals.Noise(300, seed: 3));
+        var result = ClipProcessor.Process(clip);
 
-        // Every loud sample of the original speech survives the trim.
-        var loudInOriginal = speech.Samples.Count(s => Math.Abs((int)s) > 3000);
+        // Every loud sample of the (filtered) recording survives the trim.
+        var filtered = HighPassFilter.Apply(clip);
+        var loudInOriginal = filtered.Samples.Count(s => Math.Abs((int)s) > 3000);
         var loudAfter = result.Audio.Samples.Count(s => Math.Abs((int)s) > 3000);
+        Assert.True(loudInOriginal > 20000);
         Assert.Equal(loudInOriginal, loudAfter);
     }
 
     [Fact]
     public void Fades_remove_clicks_at_both_edges()
     {
-        var result = ClipProcessor.Process(Signals.Concat(Signals.Constant(300, 12000), Signals.Silence(10)));
+        // A loud tone that starts and stops abruptly, with no silence around it.
+        var result = ClipProcessor.Process(Signals.Tone(300, peakDbfs: -3, frequency: 200));
 
         Assert.Equal(0, result.Audio.Samples[0]);
         Assert.True(Math.Abs((int)result.Audio.Samples[^1]) < 100);

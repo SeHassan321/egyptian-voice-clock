@@ -168,6 +168,15 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
                 continue;
             }
 
+            if (clip.ProcessingVersion < ClipProcessor.Version)
+            {
+                var processed = ClipProcessor.Process(audio);
+                if (processed.IsValid)
+                {
+                    audio = processed.Audio;
+                }
+            }
+
             lock (_sync)
             {
                 // Only cache if nothing replaced this clip while it was being read.
@@ -207,7 +216,7 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
 
             lock (_sync)
             {
-                _user[assetId] = new ClipFile(path, audio.Duration, sha);
+                _user[assetId] = new ClipFile(path, audio.Duration, sha) { ProcessingVersion = ClipProcessor.Version };
                 _cache[assetId] = audio;
                 _manifest.Clips[assetId] = NewManifestEntry(entry, path, audio.Duration, sha, DateTimeOffset.UtcNow);
             }
@@ -413,7 +422,7 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
                 await AtomicFile.WriteAllBytesAsync(path, wav, CancellationToken.None).ConfigureAwait(false);
                 lock (_sync)
                 {
-                    _user[clip.Id] = new ClipFile(path, clip.Audio.Duration, sha);
+                    _user[clip.Id] = new ClipFile(path, clip.Audio.Duration, sha) { ProcessingVersion = ClipProcessor.Version };
                     _cache[clip.Id] = clip.Audio;
                     _manifest.Clips[clip.Id] = NewManifestEntry(entry, path, clip.Audio.Duration, sha, DateTimeOffset.UtcNow);
                 }
@@ -469,7 +478,7 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
         var directory = _locations.BundledClipsDirectory;
         var index = ReadBundledIndex(Path.Combine(directory, BundledIndexFile));
 
-        if (index is not null && string.Equals(index.Tag, tag, StringComparison.Ordinal))
+        if (index is not null && string.Equals(index.Tag, tag, StringComparison.Ordinal) && index.ProcessingVersion == ClipProcessor.Version)
         {
             var clips = new Dictionary<string, ClipFile>(StringComparer.Ordinal);
             foreach (var (id, sha) in index.Clips)
@@ -477,7 +486,7 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
                 var path = Path.Combine(directory, id + ".wav");
                 if (_catalog.IsKnownId(id) && File.Exists(path))
                 {
-                    clips[id] = InspectFile(path, sha);
+                    clips[id] = InspectFile(path, sha, ClipProcessor.Version);
                 }
             }
 
@@ -554,7 +563,7 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
             }
 
             var indexJson = JsonSerializer.Serialize(
-                new BundledIndexDocument { Tag = tag, Problem = problem, Clips = shas },
+                new BundledIndexDocument { Tag = tag, ProcessingVersion = ClipProcessor.Version, Problem = problem, Clips = shas },
                 CoreJsonContext.Default.BundledIndexDocument);
             await File.WriteAllTextAsync(Path.Combine(temp, BundledIndexFile), indexJson).ConfigureAwait(false);
 
@@ -573,7 +582,7 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
 
         var clips = shas.ToDictionary(
             p => p.Key,
-            p => InspectFile(Path.Combine(directory, p.Key + ".wav"), p.Value),
+            p => InspectFile(Path.Combine(directory, p.Key + ".wav"), p.Value, ClipProcessor.Version),
             StringComparer.Ordinal);
 
         lock (_sync)
@@ -601,12 +610,12 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
             }
 
             manifest.Clips.TryGetValue(id, out var manifestEntry);
-            var clip = InspectFile(path, manifestEntry?.Sha256);
+            var clip = InspectFile(path, manifestEntry?.Sha256, manifestEntry?.ProcessingVersion ?? 0);
             clips[id] = clip;
 
             if (manifestEntry is null)
             {
-                manifest.Clips[id] = NewManifestEntry(entry, path, clip.Duration ?? TimeSpan.Zero, null, File.GetLastWriteTimeUtc(path));
+                manifest.Clips[id] = NewManifestEntry(entry, path, clip.Duration ?? TimeSpan.Zero, null, File.GetLastWriteTimeUtc(path), processingVersion: 0);
                 manifestNeedsWrite = true;
             }
 
@@ -704,8 +713,9 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
     private const string ManifestStatusRecorded = "recorded";
     private const string ManifestStatusInvalid = "invalid";
 
-    private VoiceManifestEntry NewManifestEntry(CatalogEntry entry, string path, TimeSpan duration, string? sha, DateTimeOffset recordedAt) => new()
+    private VoiceManifestEntry NewManifestEntry(CatalogEntry entry, string path, TimeSpan duration, string? sha, DateTimeOffset recordedAt, int processingVersion = ClipProcessor.Version) => new()
     {
+        ProcessingVersion = processingVersion,
         File = Path.GetRelativePath(_locations.VoiceDirectory, path).Replace('\\', '/'),
         Category = entry.Category.ToString(),
         Status = ManifestStatusRecorded,
@@ -752,7 +762,7 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
     }
 
     /// <summary>Cheap start-up check: size and RIFF/WAVE header only. Full decoding happens on use.</summary>
-    private static ClipFile InspectFile(string path, string? sha)
+    private static ClipFile InspectFile(string path, string? sha, int processingVersion)
     {
         try
         {
@@ -783,7 +793,7 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
                 }
             }
 
-            return new ClipFile(path, duration, sha);
+            return new ClipFile(path, duration, sha) { ProcessingVersion = processingVersion };
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -889,6 +899,9 @@ public sealed class VoiceAssetRepository : IVoiceAssetRepository
             Sha256 = sha256;
         }
 
+        /// <summary>The <see cref="ClipProcessor.Version"/> the stored audio was cleaned with (0 = unknown/old).</summary>
+        public int ProcessingVersion { get; init; }
+
         public string Path { get; }
 
         public TimeSpan? Duration { get; }
@@ -912,6 +925,9 @@ internal sealed class VoiceManifestEntry
 {
     public string File { get; set; } = string.Empty;
 
+    /// <summary>Processing version of the stored audio; 0 when written by a build without this field.</summary>
+    public int ProcessingVersion { get; set; }
+
     public string Category { get; set; } = string.Empty;
 
     public string Status { get; set; } = "recorded";
@@ -926,6 +942,8 @@ internal sealed class VoiceManifestEntry
 internal sealed class BundledIndexDocument
 {
     public string Tag { get; set; } = string.Empty;
+
+    public int ProcessingVersion { get; set; }
 
     public string? Problem { get; set; }
 

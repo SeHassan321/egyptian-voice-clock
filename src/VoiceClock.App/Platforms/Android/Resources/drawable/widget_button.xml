@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Amber circle with the "clock + sound" symbol; square intrinsic size so it scales as a circle. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#FFC107" />
+            <size android:width="64dp" android:height="64dp" />
+        </shape>
+    </item>
+    <item
+        android:drawable="@drawable/widget_speak"
+        android:left="12dp"
+        android:top="12dp"
+        android:right="12dp"
+        android:bottom="12dp" />
+</layer-list>

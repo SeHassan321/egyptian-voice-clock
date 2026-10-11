@@ -13,12 +13,14 @@ They test real logic, not just construction, without any Android tools:
 | Time engine | all 16 acceptance examples (morning and evening); the owner's exact-minute rules (1:24, 1:25, 1:43…); every one of the 1,440 minutes of a day against independently computed expectations; 720 distinct sentences per 12-hour cycle; 12 → 1 wrap; midnight and noon; صباحًا/مساءً placement; segment order; determinism; seconds ignored |
 | Phrase dictionary | all 12 hours and 59 minutes mapped; only 40/45/50/55 use «إلا»; round-minute wording; Egyptian counting forms; changing a word in data changes speech without code; malformed rules rejected with clear reasons |
 | Catalog | 74 clips, ids unique and well-formed; every clip any plan can need exists, and every required clip is actually used |
-| Audio | WAV read/write (including stereo, extra chunks, extensible format); truncated/foreign/empty files rejected; silence trimming keeps every loud sample of the speech; fades; too short/long/silent/quiet/clipped detection; loudness normalization limits; gapless composition with exact gaps; resampling |
-| Storage | persistence across restarts; manifest contents; atomic replace (interrupted write leaves the previous recording intact); unrelated clips untouched; deleting/restoring defaults; damaged files detected and the default used instead; corrupt or missing manifest rebuilt; externally deleted files; concurrent saves of different and of the same clip |
+| Audio | WAV read/write (including stereo, extra chunks, extensible format); truncated/foreign/empty files rejected; 80 Hz low-cut filter (25/50 Hz removed, voice band unchanged, DC removed); rumble before a word trimmed; soft hissing consonants kept at the start and end; isolated clicks ignored; silence trimming keeps every loud sample of the speech; fades; too short/long/silent/quiet/clipped detection; loudness normalization limits; gapless composition with exact gaps; resampling |
+| Playback completion | `StreamPlayer` against a simulated Android AudioTrack: typical phones, deep-buffer phones that hold back the last partial period, position reading 0 after stop (the cause of the false "playback failed" in builds 1–4), slow Bluetooth start, output that never starts or stops midway, write errors, focus loss while writing or draining, cancellation, audio shorter than the buffer, a position that never moves |
+| Shipped voice | the bundled `voicepack.zip` passes import validation, contains every required clip, covers all 1,440 minutes, and every prepared clip is clean speech without long leading/trailing silence |
+| Storage | persistence across restarts; manifest contents; atomic replace (interrupted write leaves the previous recording intact); unrelated clips untouched; deleting/restoring defaults; damaged files detected and the default used instead; corrupt or missing manifest rebuilt; externally deleted files; concurrent saves of different and of the same clip; recordings from older builds cleaned on load without touching the files; bundled voice re-prepared when the processing improves |
 | Bundled voice | extracted once per build; re-extracted when the build changes; broken pack reported without crashing |
 | Backup/restore | round trip; defaults not duplicated; rejection of non-zips, wrong format, future versions, missing manifest; path traversal, unknown ids, checksum mismatch, duplicates, silent audio and oversized (zip-bomb) entries skipped |
 | Settings | defaults; persistence; corruption kept aside and defaults restored; migration from unversioned files; newer files read but not overwritten; clamping |
-| Announcements | correct clips and order; missing recordings reported (never "success"); recorded error message vs beep; full-sentence priority and fallback; duplicate requests ignored; cancellation; every player failure mapped to a non-success result; repeat replays identical audio; no speech while recording |
+| Announcements | correct clips and order; missing recordings reported (never "success"); recorded error message only for missing recordings, beep for playback failures; full-sentence priority and fallback; duplicate requests ignored; cancellation; every player failure mapped to a non-success result; repeat replays identical audio; no speech while recording |
 | Recording | one session at a time; take trimming; unusable takes cannot be saved; microphone unavailable; cancel releases the microphone; replacing another clip while recording |
 | Coverage | all 720 (or 1,440 with صباحًا/مساءً) times checked; one missing minute leaves exactly 12 times uncovered; a missing hour leaves exactly 60; optional sentences never hide a missing word |
 | View models | big button, muted volume, setup messages, double taps, navigation, errors become friendly messages; setup progress and completion; backup/restore flows; recorder permission flows (denied, permanently denied → settings); guided "save then next missing" |
@@ -42,6 +44,8 @@ Use a real phone; emulators often have no usable microphone.
 - [ ] With every clip recorded, «راجع كل الأوقات والتسجيلات» reports all 720 times fine.
 - [ ] Main button speaks the current time; compare with the status-bar clock for a few minutes
       (especially :25, :40, :43, :45, :55 and around 12).
+- [ ] After the time is spoken, nothing else is heard and no error message appears (builds 1–4
+      wrongly reported "مقدرتش أشغّل الصوت" here).
 - [ ] Repeat button replays the same sentence.
 - [ ] Tap the main button repeatedly: speech never overlaps or queues.
 - [ ] Media volume at zero → the system volume panel appears instead of silent "speech".
@@ -53,7 +57,8 @@ Use a real phone; emulators often have no usable microphone.
 - [ ] Play music in another app, then press the button: the music ducks while the time is spoken.
 
 ### Widget
-- [ ] Long-press the home screen → Widgets → «الساعة الناطقة»; add it (resize works).
+- [ ] Long-press the home screen → Widgets → «الساعة الناطقة»; it is added as a 1×1 round button
+      (resize works). A widget added by an older build keeps its old size: remove it and add it again.
 - [ ] With the app closed (swipe it away from recents), tap the widget: the time is spoken
       without the app opening. A brief notification may flash while speaking.
 - [ ] TalkBack on: the widget is announced as «قول الساعة كام».

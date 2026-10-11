@@ -37,6 +37,38 @@ internal static class Signals
         return new PcmAudio(rate, samples);
     }
 
+    /// <summary>A soft "s"-like hiss: white noise emphasized toward high frequencies (repeatable).</summary>
+    public static PcmAudio Hiss(int ms, double rmsDbfs = -38, int seed = 5, int rate = Rate)
+    {
+        var random = new Random(seed);
+        var raw = new double[rate * ms / 1000];
+        double previous = 0;
+        for (var i = 0; i < raw.Length; i++)
+        {
+            var white = (random.NextDouble() * 2) - 1;
+            raw[i] = white - previous; // first difference: energy concentrated at high frequencies
+            previous = white;
+        }
+
+        var rms = Math.Sqrt(raw.Average(v => v * v));
+        var scale = AudioMath.FromDbfs(rmsDbfs) / rms;
+        return new PcmAudio(rate, raw.Select(v => AudioMath.Clamp(v * scale)).ToArray());
+    }
+
+    /// <summary>Adds two signals of the same rate, sample by sample (the shorter one is padded with silence).</summary>
+    public static PcmAudio Mix(PcmAudio a, PcmAudio b)
+    {
+        var length = Math.Max(a.SampleCount, b.SampleCount);
+        var mixed = new short[length];
+        for (var i = 0; i < length; i++)
+        {
+            var sum = (i < a.SampleCount ? a.Samples[i] : 0) + (i < b.SampleCount ? b.Samples[i] : 0);
+            mixed[i] = AudioMath.Clamp(sum);
+        }
+
+        return new PcmAudio(a.SampleRate, mixed);
+    }
+
     public static PcmAudio Constant(int ms, short value, int rate = Rate)
     {
         var samples = new short[rate * ms / 1000];

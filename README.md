@@ -8,11 +8,12 @@ says «الساعة اتنين إلا ربع»; no reading is needed.
 
 - **التنزيل على الموبايل:** افتح اللينك ده من الموبايل ونزّل الملف وافتحه:
   https://github.com/SeHassan321/egyptian-voice-clock/releases/download/latest/EgyptianVoiceClock.apk
-- **أول مرة:** الساعة مفيهاش صوت. افتح زرار الإعدادات (تحت في الركن) ← «سجّل اللي ناقص»، وسجّل الجمل
-  واحدة واحدة (71 جملة قصيرة). بعد كل جملة: اسمعها واحفظها، وهي تنقلك للي بعدها.
-- **عشان صوتك ينزل مع التطبيق:** من الإعدادات ← «ابعت الصوت كامل»، وارفع ملف `voicepack.zip` على
-  الريبو في `src/VoiceClock.App/Resources/Raw/`. التطبيق اللي بعده هيتكلم بصوتك من غير تسجيل.
-- **الويدجت:** دوسة طويلة على الشاشة الرئيسية ← Widgets ← «الساعة الناطقة». دوسة واحدة عليه تقول الساعة.
+- **الصوت:** صوت حسن نازل مع التطبيق (`src/VoiceClock.App/Resources/Raw/voicepack.zip`)، فالساعة بتتكلم
+  من أول ما تتثبّت. أي حد يقدر يعيد تسجيل أي جملة من الإعدادات، و«رجّع الأساسي» يرجّع صوت حسن.
+- **تحديث الصوت الأساسي:** سجّل الجمل اللي عايز تغيّرها، ومن الإعدادات ← «ابعت الصوت كامل»، وارفع
+  `voicepack.zip` الجديد مكان القديم في نفس الفولدر.
+- **الويدجت:** دوسة طويلة على الشاشة الرئيسية ← Widgets ← «الساعة الناطقة» (مقاسه 1×1 وينفع يتكبّر).
+  دوسة واحدة عليه تقول الساعة.
 - **مثال لطريقة النطق:** 1:25 «واحدة ونص إلا خمسة»، 1:43 «واحدة وتلاتة وأربعين دقيقة»،
   1:45 «اتنين إلا ربع». الجدول الكامل في [docs/ALL-TIMES.md](docs/ALL-TIMES.md).
 
@@ -20,15 +21,17 @@ says «الساعة اتنين إلا ربع»; no reading is needed.
 
 - **Voice-first home screen**: a very large "say the time" button, repeat, media volume, setup.
   No digits on screen, TalkBack labels in Arabic, large touch targets, high contrast.
-- **Home-screen widget** that speaks the time with one tap, without opening the app.
+- **Home-screen widget** (1×1, resizable) that speaks the time with one tap, without opening the app.
 - **Natural Egyptian Arabic** driven by an editable phrase dictionary; every one of the 720 times is
   defined and tested ([rules](docs/TIME-RULES.md), [all times](docs/ALL-TIMES.md)).
 - **Hybrid speech**: reusable recorded pieces, plus optional complete recorded sentences for any time
   that should sound more natural; a missing recording is reported, never faked.
 - **Guided recording** of 71 short clips with validation (silence, too short/long, too quiet,
-  distorted), automatic silence trimming, preview, and "next missing clip" flow
+  distorted), a voice low-cut filter (removes rumble and hum), silence trimming that keeps soft
+  consonants, preview, and "next missing clip" flow
   ([catalog](docs/RECORDING-CATALOG.md)).
-- **Default voice shipped in the APK**, overridable per clip on each phone ([voice pack](docs/VOICE-PACK.md)).
+- **Hassan's voice ships in the APK** as the default (all 73 clips), overridable per clip on each phone
+  ([voice pack](docs/VOICE-PACK.md)).
 - **Backup and restore** through the system file picker or share sheet (no storage permission).
 - **Fully offline**: no internet permission, no account, no cloud, no text-to-speech service.
 - Optional «صباحًا / مساءً», adjustable pause between words, loudness evening, error beep/vibration.
@@ -66,8 +69,9 @@ docs/                         rules, catalog, voice pack, build/release, testing
 4. `VoiceAssetRepository` loads each clip (own recording first, then the bundled default).
 5. `AnnouncementComposer` joins them into one buffer with short, configurable pauses and evens out
    their loudness.
-6. `AndroidAudioOutput` plays it through `AudioTrack` with transient audio focus, refuses during
-   calls, and reports success only when the player has actually played it.
+6. `AndroidAudioOutput` plays it through `AudioTrack` with transient audio focus and refuses during
+   calls; `StreamPlayer` decides success or failure (output error, never started, stopped consuming),
+   tested against simulated phones with real AudioTrack quirks.
 
 ## Building
 

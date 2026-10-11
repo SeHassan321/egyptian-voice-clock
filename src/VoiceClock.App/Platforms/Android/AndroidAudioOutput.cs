@@ -9,13 +9,14 @@ namespace VoiceClock.App.Droid;
 
 /// <summary>
 /// Plays a composed announcement as one continuous PCM stream through <see cref="AudioTrack"/>:
-/// no gaps or clicks between words, transient audio focus (other apps duck), nothing played during
-/// a call, and success reported only after the player has actually played the buffer.
+/// no gaps or clicks between words, transient audio focus (other apps duck), and nothing played
+/// during a call. Completion and failures are decided by <see cref="StreamPlayer"/>, which is
+/// unit-tested against simulated phones (see StreamPlayerTests).
 /// </summary>
 public sealed class AndroidAudioOutput : IAudioOutput
 {
-    private static readonly TimeSpan StallLimit = TimeSpan.FromMilliseconds(1500);
     private readonly IAppLog _log;
+    private readonly IPlaybackClock _clock = new SystemPlaybackClock();
 
     public AndroidAudioOutput(IAppLog log)
     {
@@ -60,17 +61,17 @@ public sealed class AndroidAudioOutput : IAudioOutput
         AudioTrack? track = null;
         try
         {
+            var minBuffer = AudioTrack.GetMinBufferSize(audio.SampleRate, ChannelOut.Mono, AEncoding.Pcm16bit);
+            if (minBuffer <= 0)
+            {
+                return Fail($"Unsupported output format ({minBuffer}).");
+            }
+
             var format = new AudioFormat.Builder()
                 .SetSampleRate(audio.SampleRate)!
                 .SetEncoding(AEncoding.Pcm16bit)!
                 .SetChannelMask(ChannelOut.Mono)!
                 .Build()!;
-
-            var minBuffer = AudioTrack.GetMinBufferSize(audio.SampleRate, ChannelOut.Mono, AEncoding.Pcm16bit);
-            if (minBuffer <= 0)
-            {
-                return new PlaybackOutcome(PlaybackOutcomeKind.Failed, $"Unsupported output format ({minBuffer}).");
-            }
 
             track = new AudioTrack.Builder()
                 .SetAudioAttributes(attributes)!
@@ -81,36 +82,22 @@ public sealed class AndroidAudioOutput : IAudioOutput
 
             if (track.State != AudioTrackState.Initialized)
             {
-                return new PlaybackOutcome(PlaybackOutcomeKind.Failed, "Audio output could not be initialized.");
+                return Fail("Audio output could not be initialized.");
             }
 
-            track.Play();
-            var samples = audio.Samples;
-            var total = samples.Length;
-            var writeError = await Task.Run(() => WriteAll(track, samples, focusLost.Task, cancellationToken), cancellationToken);
-            if (writeError is not null)
-            {
-                return new PlaybackOutcome(PlaybackOutcomeKind.Failed, writeError);
-            }
+            var outcome = await StreamPlayer.PlayAsync(
+                new AudioTrackSink(track),
+                audio,
+                () => focusLost.Task.IsCompleted,
+                _clock,
+                cancellationToken: cancellationToken);
 
-            if (focusLost.Task.IsCompleted)
+            if (outcome.Kind == PlaybackOutcomeKind.Failed)
             {
-                return new PlaybackOutcome(PlaybackOutcomeKind.Interrupted);
-            }
-
-            // Do not call Stop() yet: on Android it makes PlaybackHeadPosition read 0 immediately,
-            // which would hide whether the audio was really played.
-            var outcome = await WaitUntilPlayedAsync(track, total, audio, focusLost.Task, cancellationToken);
-            if (outcome.Succeeded)
-            {
-                track.Stop();
+                _log.Warn($"Playback failed: {outcome.Detail}");
             }
 
             return outcome;
-        }
-        catch (OperationCanceledException)
-        {
-            return PlaybackOutcome.Cancelled;
         }
         catch (Java.Lang.Exception ex)
         {
@@ -121,19 +108,6 @@ public sealed class AndroidAudioOutput : IAudioOutput
         {
             if (track is not null)
             {
-                try
-                {
-                    if (track.PlayState != PlayState.Stopped)
-                    {
-                        track.Pause();
-                        track.Flush();
-                        track.Stop();
-                    }
-                }
-                catch (Java.Lang.IllegalStateException)
-                {
-                }
-
                 track.Release();
                 track.Dispose();
             }
@@ -142,91 +116,45 @@ public sealed class AndroidAudioOutput : IAudioOutput
         }
     }
 
-    private static string? WriteAll(AudioTrack track, short[] samples, Task focusLost, CancellationToken cancellationToken)
+    private PlaybackOutcome Fail(string detail)
     {
-        var offset = 0;
-        while (offset < samples.Length)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (focusLost.IsCompleted)
-            {
-                return null;
-            }
-
-            var written = track.Write(samples, offset, Math.Min(4096, samples.Length - offset));
-            if (written < 0)
-            {
-                return $"AudioTrack.write failed ({written}).";
-            }
-
-            offset += written;
-        }
-
-        return null;
+        _log.Warn("Playback failed: " + detail);
+        return new PlaybackOutcome(PlaybackOutcomeKind.Failed, detail);
     }
 
-    /// <summary>
-    /// Waits until the mixer has consumed everything except a short tail (always silence in composed
-    /// announcements), then until the speaker has actually presented it (AudioTimestamp), so Bluetooth
-    /// and other high-latency outputs never lose the last syllable.
-    /// </summary>
-    private static async Task<PlaybackOutcome> WaitUntilPlayedAsync(AudioTrack track, int total, PcmAudio audio, Task focusLost, CancellationToken cancellationToken)
+    /// <summary>Adapts an <see cref="AudioTrack"/> in streaming mode to <see cref="IPcmStreamSink"/>.</summary>
+    private sealed class AudioTrackSink : IPcmStreamSink
     {
-        var target = total - Math.Min(total / 10, audio.SampleRate * 60 / 1000);
-        var deadline = DateTime.UtcNow + audio.Duration + TimeSpan.FromSeconds(3);
-        var lastPosition = -1;
-        var lastChange = DateTime.UtcNow;
+        private readonly AudioTrack _track;
 
-        while (true)
+        public AudioTrackSink(AudioTrack track)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (focusLost.IsCompleted)
-            {
-                return new PlaybackOutcome(PlaybackOutcomeKind.Interrupted);
-            }
-
-            var position = track.PlaybackHeadPosition;
-            if (position >= target)
-            {
-                break;
-            }
-
-            var now = DateTime.UtcNow;
-            if (position != lastPosition)
-            {
-                lastPosition = position;
-                lastChange = now;
-            }
-            else if (now - lastChange > StallLimit)
-            {
-                return new PlaybackOutcome(PlaybackOutcomeKind.Failed, $"Playback stalled at {position}/{total}.");
-            }
-
-            if (now > deadline)
-            {
-                return new PlaybackOutcome(PlaybackOutcomeKind.Failed, $"Playback timed out at {position}/{total}.");
-            }
-
-            await Task.Delay(15, cancellationToken);
+            _track = track;
+            BufferFrames = track.BufferSizeInFrames;
         }
 
-        await WaitForPresentationAsync(track, target, cancellationToken);
-        return focusLost.IsCompleted ? new PlaybackOutcome(PlaybackOutcomeKind.Interrupted) : PlaybackOutcome.Completed;
-    }
+        public int BufferFrames { get; }
 
-    /// <summary>Waits (at most 600 ms) until the output reports the target frame as heard.</summary>
-    private static async Task WaitForPresentationAsync(AudioTrack track, long targetFrame, CancellationToken cancellationToken)
-    {
-        var timestamp = new AudioTimestamp();
-        var until = DateTime.UtcNow + TimeSpan.FromMilliseconds(600);
-        while (DateTime.UtcNow < until)
+        // The Java value is an unsigned 32-bit frame counter.
+        public long PlaybackPosition => (uint)_track.PlaybackHeadPosition;
+
+        public void Play() => _track.Play();
+
+        public int Write(short[] samples, int offset, int count) =>
+            _track.Write(samples, offset, count, WriteMode.NonBlocking);
+
+        public void Stop() => _track.Stop();
+
+        public void Abort()
         {
-            if (track.GetTimestamp(timestamp) && timestamp.FramePosition >= targetFrame)
+            try
             {
-                return;
+                _track.Pause();
+                _track.Flush();
             }
-
-            await Task.Delay(15, cancellationToken);
+            catch (Java.Lang.IllegalStateException)
+            {
+            }
         }
     }
 

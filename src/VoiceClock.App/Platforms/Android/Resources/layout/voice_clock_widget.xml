@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One big tap target. The description is read by TalkBack; no text is shown. -->
+<!-- One round tap target that stays circular in any cell shape (fitCenter keeps the 1:1 drawable).
+     The description is read by TalkBack; no text is shown. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_background"
     android:clickable="true"
     android:focusable="true"
     android:contentDescription="@string/widget_content_description"
-    android:padding="12dp">
+    android:padding="4dp">
 
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitCenter"
-        android:src="@drawable/widget_speak"
+        android:src="@drawable/widget_button"
         android:importantForAccessibility="no" />
 </FrameLayout>

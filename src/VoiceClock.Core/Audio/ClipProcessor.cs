@@ -15,6 +15,9 @@ public sealed record ClipProcessingOptions
 {
     public static ClipProcessingOptions Default { get; } = new();
 
+    /// <summary>Low-cut filter frequency that removes rumble and hum below the voice; 0 disables it.</summary>
+    public double HighPassHz { get; init; } = HighPassFilter.DefaultCutoffHz;
+
     /// <summary>Remove leading and trailing silence (keeping the padding below).</summary>
     public bool TrimSilence { get; init; } = true;
 
@@ -48,29 +51,41 @@ public sealed record ProcessedClip(PcmAudio Audio, ClipAnalysis Analysis, IReadO
 }
 
 /// <summary>
-/// Validates a raw recording and trims silence safely: the detected speech is kept intact with
-/// padding on both sides, and short fades prevent clicks. Nothing else is altered.
+/// Validates a raw recording and cleans it gently: a low-cut filter removes rumble below the voice,
+/// then silence is trimmed while the detected speech is kept intact with padding on both sides, and
+/// short fades prevent clicks. Nothing else is altered.
 /// </summary>
 public static class ClipProcessor
 {
+    /// <summary>
+    /// Version of this processing. Clips stored by an older version are processed again when loaded,
+    /// so improvements reach recordings made with earlier builds without changing the stored files.
+    /// 1 = trimming only; 2 = low-cut filter and click-proof speech detection.
+    /// </summary>
+    public const int Version = 2;
+
     public static ProcessedClip Process(PcmAudio raw, ClipProcessingOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(raw);
         options ??= ClipProcessingOptions.Default;
 
-        var analysis = ClipAnalyzer.Analyze(raw);
         if (raw.IsEmpty)
         {
-            return new ProcessedClip(raw, analysis, [ClipIssue.Empty]);
+            return new ProcessedClip(raw, ClipAnalyzer.Analyze(raw), [ClipIssue.Empty]);
         }
+
+        // Clipping is judged on the original samples; everything else on the filtered voice.
+        var clippedFraction = ClipAnalyzer.Analyze(raw).ClippedFraction;
+        var filtered = HighPassFilter.Apply(raw, options.HighPassHz);
+        var analysis = ClipAnalyzer.Analyze(filtered);
 
         if (!analysis.HasSpeech)
         {
-            return new ProcessedClip(raw, analysis, [ClipIssue.NoSpeech]);
+            return new ProcessedClip(filtered, analysis, [ClipIssue.NoSpeech]);
         }
 
         var issues = new List<ClipIssue>();
-        var rate = raw.SampleRate;
+        var rate = filtered.SampleRate;
 
         if (analysis.SpeechSampleCount < AudioMath.MsToSamples(rate, options.MinSpeechMs))
         {
@@ -78,14 +93,14 @@ public static class ClipProcessor
         }
 
         var start = 0;
-        var end = raw.SampleCount;
+        var end = filtered.SampleCount;
         if (options.TrimSilence)
         {
             start = Math.Max(0, analysis.SpeechStartSample - AudioMath.MsToSamples(rate, options.LeadPaddingMs));
-            end = Math.Min(raw.SampleCount, analysis.SpeechEndSample + AudioMath.MsToSamples(rate, options.TailPaddingMs));
+            end = Math.Min(filtered.SampleCount, analysis.SpeechEndSample + AudioMath.MsToSamples(rate, options.TailPaddingMs));
         }
 
-        var trimmed = raw.Slice(start, end - start);
+        var trimmed = filtered.Slice(start, end - start);
         AudioMath.ApplyFades(trimmed.Samples, AudioMath.MsToSamples(rate, options.FadeInMs), AudioMath.MsToSamples(rate, options.FadeOutMs));
 
         if (trimmed.SampleCount > AudioMath.MsToSamples(rate, options.MaxDurationMs))
@@ -98,7 +113,7 @@ public static class ClipProcessor
             issues.Add(ClipIssue.TooQuiet);
         }
 
-        if (analysis.ClippedFraction > options.MaxClippedFraction)
+        if (clippedFraction > options.MaxClippedFraction)
         {
             issues.Add(ClipIssue.Clipped);
         }
