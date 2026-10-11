@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Voice-first home screen. No digits and no text are needed to use it:
+  one very large button speaks the time; repeat and volume sit below it.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:VoiceClock.Core.ViewModels;assembly=VoiceClock.Core"
+             xmlns:res="clr-namespace:VoiceClock.Core.Resources;assembly=VoiceClock.Core"
+             x:Class="VoiceClock.App.Pages.MainPage"
+             x:DataType="vm:MainViewModel"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto,Auto" Padding="20,28,20,20" RowSpacing="20">
+
+        <ImageButton Grid.Row="0"
+                     Source="speak.png"
+                     Command="{Binding AnnounceCommand}"
+                     BackgroundColor="{StaticResource Primary}"
+                     CornerRadius="48"
+                     Padding="56"
+                     Aspect="AspectFit"
+                     SemanticProperties.Description="{x:Static res:Strings.Main_Announce_Description}"
+                     SemanticProperties.Hint="{x:Static res:Strings.Main_Announce_Hint}">
+            <ImageButton.Triggers>
+                <DataTrigger TargetType="ImageButton" Binding="{Binding IsSpeaking}" Value="True">
+                    <Setter Property="BackgroundColor" Value="{StaticResource PrimaryPressed}" />
+                </DataTrigger>
+            </ImageButton.Triggers>
+        </ImageButton>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="16" HeightRequest="120">
+            <ImageButton Grid.Column="0"
+                         Source="volume_up.png"
+                         Command="{Binding VolumeUpCommand}"
+                         Style="{StaticResource IconButton}"
+                         SemanticProperties.Description="{x:Static res:Strings.Main_VolumeUp_Description}" />
+            <ImageButton Grid.Column="1"
+                         Source="repeat.png"
+                         Command="{Binding RepeatCommand}"
+                         Style="{StaticResource IconButton}"
+                         SemanticProperties.Description="{x:Static res:Strings.Main_Repeat_Description}" />
+            <ImageButton Grid.Column="2"
+                         Source="volume_down.png"
+                         Command="{Binding VolumeDownCommand}"
+                         Style="{StaticResource IconButton}"
+                         SemanticProperties.Description="{x:Static res:Strings.Main_VolumeDown_Description}" />
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <ImageButton Grid.Column="0"
+                         Source="settings.png"
+                         Command="{Binding OpenSetupCommand}"
+                         Style="{StaticResource IconButton}"
+                         WidthRequest="72"
+                         HeightRequest="72"
+                         Padding="18"
+                         SemanticProperties.Description="{x:Static res:Strings.Main_Setup_Description}" />
+            <Label Grid.Column="1"
+                   Text="{Binding StatusMessage}"
+                   IsVisible="{Binding HasStatusMessage}"
+                   Style="{StaticResource Hint}"
+                   VerticalOptions="Center"
+                   LineBreakMode="WordWrap" />
+        </Grid>
+    </Grid>
+</ContentPage>

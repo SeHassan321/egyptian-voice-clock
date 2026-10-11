@@ -72,7 +72,7 @@ public interface IBackupFiles
     Task<Stream?> PickAsync(CancellationToken cancellationToken = default);
 }
 
-public interface IAppInfo
+public interface IAppVersion
 {
     /// <summary>For example "1.0.0 (12)".</summary>
     string VersionLabel { get; }

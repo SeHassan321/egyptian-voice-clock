@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Setup hub for the person configuring the app (text is fine here). -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:VoiceClock.Core.ViewModels;assembly=VoiceClock.Core"
+             xmlns:res="clr-namespace:VoiceClock.Core.Resources;assembly=VoiceClock.Core"
+             x:Class="VoiceClock.App.Pages.SetupPage"
+             x:DataType="vm:SetupViewModel"
+             Title="{x:Static res:Strings.Setup_Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="12">
+
+            <!-- Progress -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding CompletionText}" FontSize="24" FontAttributes="Bold">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsComplete}" Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource Success}" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsComplete}" Value="False">
+                                <Setter Property="TextColor" Value="{StaticResource Danger}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <ProgressBar Progress="{Binding Progress}" HeightRequest="10" />
+                    <Label Text="{Binding SummaryText}" />
+                    <Label Text="{Binding CoverageText}" Style="{StaticResource Hint}" />
+                    <Label Text="{Binding BundledVoiceText}" Style="{StaticResource Hint}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="{Binding Message}" FontSize="18" TextColor="{StaticResource Primary}" />
+
+            <!-- Recordings -->
+            <Label Text="{x:Static res:Strings.Setup_Section_Recordings}" Style="{StaticResource SectionTitle}" />
+            <Button Text="{x:Static res:Strings.Setup_RecordNextMissing}" Command="{Binding RecordNextMissingCommand}" Style="{StaticResource PrimaryButton}" />
+            <Button Text="{x:Static res:Strings.Setup_OpenRecordings}" Command="{Binding OpenRecordingsCommand}" />
+
+            <!-- Test -->
+            <Label Text="{x:Static res:Strings.Setup_Section_Test}" Style="{StaticResource SectionTitle}" />
+            <Button Text="{x:Static res:Strings.Setup_TestNow}" Command="{Binding TestNowCommand}" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <Label Grid.Column="0" Text="{x:Static res:Strings.Setup_TestHour}" Style="{StaticResource Hint}" />
+                <Label Grid.Column="1" Text="{x:Static res:Strings.Setup_TestMinute}" Style="{StaticResource Hint}" />
+                <Picker Grid.Row="1" Grid.Column="0"
+                        ItemsSource="{Binding HourOptions}"
+                        SelectedIndex="{Binding TestHourIndex}"
+                        Title="{x:Static res:Strings.Setup_TestHour}" />
+                <Picker Grid.Row="1" Grid.Column="1"
+                        ItemsSource="{Binding MinuteOptions}"
+                        SelectedIndex="{Binding TestMinute}"
+                        Title="{x:Static res:Strings.Setup_TestMinute}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="{x:Static res:Strings.Setup_TestPm}" VerticalOptions="Center" />
+                <Switch Grid.Column="1" IsToggled="{Binding TestIsPm}" />
+            </Grid>
+            <Label Text="{Binding TestPreviewText}" FontSize="20" FontAttributes="Bold" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Button Grid.Column="0" Text="{x:Static res:Strings.Setup_TestSelected}" Command="{Binding TestSelectedCommand}" Style="{StaticResource PrimaryButton}" />
+                <Button Grid.Column="1" Text="{x:Static res:Strings.Setup_TestSegmentsOnly}" Command="{Binding TestSegmentsOnlyCommand}" />
+            </Grid>
+
+            <!-- Options -->
+            <Label Text="{x:Static res:Strings.Setup_Section_Options}" Style="{StaticResource SectionTitle}" />
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="{x:Static res:Strings.Setup_IncludeDayPeriod}" VerticalOptions="Center" />
+                <Switch Grid.Column="1" IsToggled="{Binding IncludeDayPeriod}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="{x:Static res:Strings.Setup_UseFullPhrases}" VerticalOptions="Center" />
+                <Switch Grid.Column="1" IsToggled="{Binding UseFullPhraseOverrides}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="{x:Static res:Strings.Setup_NormalizeLoudness}" VerticalOptions="Center" />
+                <Switch Grid.Column="1" IsToggled="{Binding NormalizeLoudness}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="{x:Static res:Strings.Setup_ErrorFeedback}" VerticalOptions="Center" />
+                <Switch Grid.Column="1" IsToggled="{Binding PlayErrorFeedback}" />
+            </Grid>
+            <Label Text="{Binding SegmentGapText}" />
+            <Slider Minimum="0" Maximum="400" Value="{Binding SegmentGapMs}" />
+            <Label Text="{x:Static res:Strings.Setup_VolumeGuidance}" Style="{StaticResource Hint}" />
+            <Button Text="{x:Static res:Strings.Setup_OpenVolume}" Command="{Binding OpenVolumeCommand}" />
+
+            <!-- Check -->
+            <Label Text="{x:Static res:Strings.Setup_Section_Check}" Style="{StaticResource SectionTitle}" />
+            <Button Text="{x:Static res:Strings.Setup_CheckEverything}" Command="{Binding CheckEverythingCommand}" />
+
+            <!-- Backup -->
+            <Label Text="{x:Static res:Strings.Setup_Section_Backup}" Style="{StaticResource SectionTitle}" />
+            <Button Text="{x:Static res:Strings.Setup_ExportBackup}" Command="{Binding ExportBackupCommand}" />
+            <Button Text="{x:Static res:Strings.Setup_ShareBackup}" Command="{Binding ShareBackupCommand}" />
+            <Button Text="{x:Static res:Strings.Setup_ImportBackup}" Command="{Binding ImportBackupCommand}" />
+            <Button Text="{x:Static res:Strings.Setup_ExportFullVoice}" Command="{Binding ExportFullVoiceCommand}" />
+
+            <Label Text="{Binding VersionText}" Style="{StaticResource Hint}" HorizontalOptions="Center" Margin="0,24,0,8" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

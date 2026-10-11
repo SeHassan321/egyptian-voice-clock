@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Android-only .NET MAUI app. API 36 (Android 16) is the .NET 10 target; minimum is Android 8.0 (API 26),
+         where notification channels, foreground-service start and audio-focus requests are all available. -->
+    <TargetFramework>net10.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>VoiceClock.App</RootNamespace>
+    <AssemblyName>VoiceClock.App</AssemblyName>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+
+    <ApplicationTitle>الساعة الناطقة</ApplicationTitle>
+    <ApplicationId>com.egyptianvoiceclock.app</ApplicationId>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <!-- CI overrides this with the run number so every build can be installed over the previous one. -->
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <!-- Release produces both an Android App Bundle (Play Store) and an APK (direct install). -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <AndroidPackageFormats>aab;apk</AndroidPackageFormats>
+  </PropertyGroup>
+
+  <!--
+    Release signing. Nothing secret lives in this file: pass the keystore and passwords at build time, e.g.
+      -p:AndroidSigningKeyStore=/path/release.keystore -p:AndroidSigningKeyAlias=voiceclock
+      -p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD -p:AndroidSigningKeyPass=env:ANDROID_KEY_PASSWORD
+    Without these, .NET signs with the local debug key (fine for testing on your own phone).
+  -->
+  <PropertyGroup Condition="'$(AndroidSigningKeyStore)' != ''">
+    <AndroidKeyStore>true</AndroidKeyStore>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#FFC107" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#101828" BaseSize="160,160" />
+    <MauiImage Include="Resources\Images\*.svg" />
+    <MauiImage Update="Resources\Images\speak.svg" BaseSize="256,256" />
+    <!-- The default voice (voicepack.zip) goes in Resources\Raw and ships inside the APK. -->
+    <MauiAsset Include="Resources\Raw\**" Exclude="Resources\Raw\.gitkeep;Resources\Raw\README.md" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VoiceClock.Core\VoiceClock.Core.csproj" />
+  </ItemGroup>
+
+</Project>

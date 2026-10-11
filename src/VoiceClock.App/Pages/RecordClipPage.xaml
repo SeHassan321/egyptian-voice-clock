@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Record one clip: what to say, a big record button, listen, save, then on to the next. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:VoiceClock.Core.ViewModels;assembly=VoiceClock.Core"
+             xmlns:res="clr-namespace:VoiceClock.Core.Resources;assembly=VoiceClock.Core"
+             x:Class="VoiceClock.App.Pages.RecordClipPage"
+             x:DataType="vm:RecordClipViewModel"
+             Title="{x:Static res:Strings.Recorder_Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="{Binding CategoryText}" Style="{StaticResource Hint}" />
+                <Label Grid.Column="1" Text="{Binding PositionText}" Style="{StaticResource Hint}" />
+            </Grid>
+
+            <Label Text="{x:Static res:Strings.Recorder_SayThis}" Style="{StaticResource Hint}" />
+            <Border Style="{StaticResource Card}" Padding="20,28">
+                <Label Text="{Binding PhraseText}"
+                       FontSize="34"
+                       FontAttributes="Bold"
+                       HorizontalTextAlignment="Center"
+                       TextColor="{StaticResource Primary}" />
+            </Border>
+            <Label Text="{Binding FullPhraseInfo}" IsVisible="{Binding IsFullPhrase}" Style="{StaticResource Hint}" />
+            <Label Text="{Binding SavedStatusText}" Style="{StaticResource Hint}" />
+
+            <Button Text="{Binding RecordButtonText}"
+                    Command="{Binding ToggleRecordingCommand}"
+                    Style="{StaticResource PrimaryButton}"
+                    MinimumHeightRequest="96"
+                    FontSize="24">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding IsRecording}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource DangerStrong}" />
+                        <Setter Property="TextColor" Value="{StaticResource OnSurface}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+
+            <VerticalStackLayout IsVisible="{Binding IsRecording}" Spacing="6">
+                <ProgressBar Progress="{Binding Level}" HeightRequest="14" />
+                <Label Text="{Binding ElapsedText}" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+
+            <Label Text="{Binding Message}" FontSize="20" HorizontalTextAlignment="Center" />
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" IsVisible="{Binding HasTake}">
+                <Button Grid.Column="0" Text="{x:Static res:Strings.Recorder_PlayTake}" Command="{Binding PlayTakeCommand}" />
+                <Button Grid.Column="1" Text="{x:Static res:Strings.Recorder_Save}" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" />
+                <Button Grid.Column="2" Text="{x:Static res:Strings.Recorder_Discard}" Command="{Binding DiscardCommand}" />
+            </Grid>
+
+            <Button Text="{x:Static res:Strings.Recorder_PlaySaved}" Command="{Binding PlaySavedCommand}" />
+            <Button Text="{x:Static res:Strings.Recorder_CompareComposed}" Command="{Binding CompareComposedCommand}" IsVisible="{Binding IsFullPhrase}" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,12,0,0">
+                <Button Grid.Column="0" Text="{x:Static res:Strings.Recorder_Previous}" Command="{Binding PreviousCommand}" />
+                <Button Grid.Column="1" Text="{x:Static res:Strings.Recorder_Next}" Command="{Binding NextCommand}" />
+            </Grid>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:VoiceClock.App.Pages"
+       x:Class="VoiceClock.App.AppShell"
+       FlowDirection="RightToLeft"
+       Shell.FlyoutBehavior="Disabled"
+       Shell.BackgroundColor="{StaticResource Surface}"
+       Shell.ForegroundColor="{StaticResource OnSurface}"
+       Shell.TitleColor="{StaticResource OnSurface}">
+
+    <ShellContent Route="main"
+                  ContentTemplate="{DataTemplate pages:MainPage}" />
+
+</Shell>

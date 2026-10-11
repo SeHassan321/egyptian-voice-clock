@@ -121,7 +121,7 @@ internal sealed class FakeBackupFiles : IBackupFiles
     }
 }
 
-internal sealed class FakeAppInfo : IAppInfo
+internal sealed class FakeAppVersion : IAppVersion
 {
     public string VersionLabel => "1.0.0 (1)";
 }

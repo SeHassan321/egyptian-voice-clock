@@ -26,7 +26,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
     private readonly IDialogService _dialogs;
     private readonly INavigationService _navigation;
     private readonly IVolumeControl _volume;
-    private readonly IAppInfo _appInfo;
+    private readonly IAppVersion _appInfo;
     private readonly IUiDispatcher _dispatcher;
     private readonly IAppLog _log;
     private CancellationTokenSource? _pendingGapSave;
@@ -54,7 +54,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         IDialogService dialogs,
         INavigationService navigation,
         IVolumeControl volume,
-        IAppInfo appInfo,
+        IAppVersion appInfo,
         IUiDispatcher dispatcher,
         IAppLog? log = null)
     {
@@ -112,9 +112,9 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
 
     public RelayCommand OpenVolumeCommand { get; }
 
-    public IReadOnlyList<int> HourOptions { get; } = Enumerable.Range(1, 12).ToArray();
+    public int[] HourOptions { get; } = Enumerable.Range(1, 12).ToArray();
 
-    public IReadOnlyList<string> MinuteOptions { get; } =
+    public string[] MinuteOptions { get; } =
         Enumerable.Range(0, 60).Select(m => m.ToString("00", CultureInfo.InvariantCulture)).ToArray();
 
     public string SummaryText

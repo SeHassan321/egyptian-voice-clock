@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- High-contrast palette: bright amber actions on a very dark background. -->
+    <Color x:Key="Primary">#FFC107</Color>
+    <Color x:Key="PrimaryPressed">#E0A800</Color>
+    <Color x:Key="OnPrimary">#141414</Color>
+    <Color x:Key="ScreenBackground">#101828</Color>
+    <Color x:Key="Surface">#1D2939</Color>
+    <Color x:Key="SurfaceRaised">#344054</Color>
+    <Color x:Key="OnSurface">#F9FAFB</Color>
+    <Color x:Key="Muted">#D0D5DD</Color>
+    <Color x:Key="Danger">#F97066</Color>
+    <Color x:Key="DangerStrong">#D92D20</Color>
+    <Color x:Key="Success">#32D583</Color>
+
+</ResourceDictionary>

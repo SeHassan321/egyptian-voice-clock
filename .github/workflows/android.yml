@@ -1,0 +1,174 @@
+name: Build Android app
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # to publish the "latest" release with the APK
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Core tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run tests
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet test tests/VoiceClock.Core.Tests/VoiceClock.Core.Tests.csproj -c Release \
+            --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=normal" \
+            --results-directory TestResults 2>&1 | tee test.log
+
+      - name: Report test failures
+        if: failure()
+        shell: bash
+        run: |
+          summary=$( (grep -E "error [A-Z]+[0-9]+|Failed |Assert\." test.log || true) | sort -u | head -60 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Tests failed::${summary}"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults
+
+  android:
+    name: Android APK and AAB
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      APP_PROJECT: src/VoiceClock.App/VoiceClock.App.csproj
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: '21'
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install the .NET MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Install Android SDK components
+        run: >
+          dotnet build "$APP_PROJECT" -t:InstallAndroidDependencies -f net10.0-android
+          -p:AndroidSdkDirectory="$ANDROID_SDK_ROOT" -p:JavaSdkDirectory="$JAVA_HOME"
+          -p:AcceptAndroidSDKLicenses=True
+
+      # A stable signing key lets every new build install over the previous one without losing
+      # recordings. Repository secrets (see docs/BUILD-AND-RELEASE.md) take priority; otherwise a key
+      # generated on the first run is kept in the Actions cache. No key or password is ever committed.
+      - name: Restore CI signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.voiceclock-signing
+          key: voiceclock-signing-v1
+
+      - name: Prepare signing
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+            echo "::add-mask::$KEYSTORE_PASSWORD"
+            {
+              echo "SIGNING_KEYSTORE=$RUNNER_TEMP/release.keystore"
+              echo "SIGNING_ALIAS=${KEY_ALIAS:-voiceclock}"
+              echo "SIGNING_STORE_PASS=$KEYSTORE_PASSWORD"
+              echo "SIGNING_KEY_PASS=${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+            } >> "$GITHUB_ENV"
+            echo "Signing with the release key from repository secrets."
+          else
+            dir="$HOME/.voiceclock-signing"
+            mkdir -p "$dir"
+            if [ ! -f "$dir/ci.keystore" ]; then
+              pass="$(openssl rand -hex 24)"
+              keytool -genkeypair -keystore "$dir/ci.keystore" -storetype PKCS12 -alias voiceclock-ci \
+                -keyalg RSA -keysize 2048 -validity 10000 -storepass "$pass" -keypass "$pass" \
+                -dname "CN=Egyptian Voice Clock CI"
+              printf '%s' "$pass" > "$dir/ci.pass"
+            fi
+            pass="$(cat "$dir/ci.pass")"
+            echo "::add-mask::$pass"
+            {
+              echo "SIGNING_KEYSTORE=$dir/ci.keystore"
+              echo "SIGNING_ALIAS=voiceclock-ci"
+              echo "SIGNING_STORE_PASS=$pass"
+              echo "SIGNING_KEY_PASS=$pass"
+            } >> "$GITHUB_ENV"
+            echo "No release key in secrets: signing with the cached CI key."
+          fi
+
+      - name: Build release APK and AAB
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet publish "$APP_PROJECT" -f net10.0-android -c Release \
+            -p:ApplicationVersion=${{ github.run_number }} \
+            -p:AndroidSdkDirectory="$ANDROID_SDK_ROOT" \
+            -p:JavaSdkDirectory="$JAVA_HOME" \
+            -p:AndroidSigningKeyStore="$SIGNING_KEYSTORE" \
+            -p:AndroidSigningKeyAlias="$SIGNING_ALIAS" \
+            -p:AndroidSigningStorePass=env:SIGNING_STORE_PASS \
+            -p:AndroidSigningKeyPass=env:SIGNING_KEY_PASS \
+            -o artifacts/publish 2>&1 | tee build.log
+
+      - name: Report build errors
+        if: failure()
+        shell: bash
+        run: |
+          summary=$( (grep -E "error [A-Z]+[0-9]+" build.log || true) | sed -E 's#^.*/src/#src/#' | sort -u | head -60 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Android build failed::${summary}"
+
+      - name: Collect packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/out
+          apk=$(find artifacts/publish -name '*-Signed.apk' | head -n 1)
+          aab=$(find artifacts/publish -name '*-Signed.aab' | head -n 1)
+          cp "$apk" artifacts/out/EgyptianVoiceClock.apk
+          cp "$aab" artifacts/out/EgyptianVoiceClock.aab
+          ls -la artifacts/out
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: egyptian-voice-clock-${{ github.run_number }}
+          path: artifacts/out
+
+      - name: Publish the "latest" release (stable download link for the phone)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest artifacts/out/EgyptianVoiceClock.apk artifacts/out/EgyptianVoiceClock.aab \
+            --title "Latest build #${{ github.run_number }}" \
+            --notes "Built automatically from ${{ github.sha }}. On your Android phone, download EgyptianVoiceClock.apk and open it to install or update." \
+            --target "${{ github.sha }}" \
+            --latest

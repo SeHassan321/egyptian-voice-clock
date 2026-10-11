@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">الساعة الناطقة</string>
+    <string name="widget_description">دوسة واحدة تقولك الساعة كام</string>
+    <string name="widget_content_description">قول الساعة كام</string>
+    <string name="widget_channel_name">نطق الساعة</string>
+    <string name="widget_speaking">بيقول الساعة…</string>
+</resources>

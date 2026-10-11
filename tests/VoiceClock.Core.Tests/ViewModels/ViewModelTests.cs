@@ -158,7 +158,7 @@ public class SetupViewModelTests : IDisposable
     {
         _vm = new SetupViewModel(
             _rig.Initializer, _rig.Settings, _rig.Repository, TestCatalog.Catalog, TestCatalog.Engine, _rig.Announcer,
-            _backup, _dialogs, _navigation, new FakeVolume(), new FakeAppInfo(), new ImmediateDispatcher());
+            _backup, _dialogs, _navigation, new FakeVolume(), new FakeAppVersion(), new ImmediateDispatcher());
     }
 
     public void Dispose()

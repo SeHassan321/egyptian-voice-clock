@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+	<application android:allowBackup="true"
+	             android:icon="@mipmap/appicon"
+	             android:roundIcon="@mipmap/appicon_round"
+	             android:supportsRtl="true"></application>
+
+	<!-- Recording the owner's voice (asked only when "record" is pressed). -->
+	<uses-permission android:name="android.permission.RECORD_AUDIO" />
+	<!-- Haptic confirmation and error vibration. -->
+	<uses-permission android:name="android.permission.VIBRATE" />
+	<!-- The home-screen widget speaks through a short foreground service. -->
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+	<!-- No INTERNET and no storage permissions: the app works fully offline and stores
+	     recordings in its private folder; backups go through the system document picker. -->
+	<uses-feature android:name="android.hardware.microphone" android:required="false" />
+</manifest>

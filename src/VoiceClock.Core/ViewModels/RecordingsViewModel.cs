@@ -150,9 +150,9 @@ public sealed class RecordingsViewModel : ObservableObject, IDisposable
 
     public AsyncCommand AddFullPhraseCommand { get; }
 
-    public IReadOnlyList<int> HourOptions { get; } = Enumerable.Range(1, 12).ToArray();
+    public int[] HourOptions { get; } = Enumerable.Range(1, 12).ToArray();
 
-    public IReadOnlyList<string> MinuteOptions { get; } =
+    public string[] MinuteOptions { get; } =
         Enumerable.Range(0, 60).Select(m => m.ToString("00", CultureInfo.InvariantCulture)).ToArray();
 
     public int PhraseHourIndex
