@@ -98,9 +98,15 @@ public sealed class AndroidAudioOutput : IAudioOutput
                 return new PlaybackOutcome(PlaybackOutcomeKind.Interrupted);
             }
 
-            // Stop() in streaming mode lets everything already written finish playing.
-            track.Stop();
-            return await WaitUntilPlayedAsync(track, total, audio, focusLost.Task, cancellationToken);
+            // Do not call Stop() yet: on Android it makes PlaybackHeadPosition read 0 immediately,
+            // which would hide whether the audio was really played.
+            var outcome = await WaitUntilPlayedAsync(track, total, audio, focusLost.Task, cancellationToken);
+            if (outcome.Succeeded)
+            {
+                track.Stop();
+            }
+
+            return outcome;
         }
         catch (OperationCanceledException)
         {
@@ -159,11 +165,14 @@ public sealed class AndroidAudioOutput : IAudioOutput
         return null;
     }
 
+    /// <summary>
+    /// Waits until the mixer has consumed everything except a short tail (always silence in composed
+    /// announcements), then until the speaker has actually presented it (AudioTimestamp), so Bluetooth
+    /// and other high-latency outputs never lose the last syllable.
+    /// </summary>
     private static async Task<PlaybackOutcome> WaitUntilPlayedAsync(AudioTrack track, int total, PcmAudio audio, Task focusLost, CancellationToken cancellationToken)
     {
-        // Some devices hold back the final fraction of a buffer; the composed audio always ends in
-        // silence, so stopping within this margin of the end never cuts speech.
-        var silentTailFrames = audio.SampleRate / 10;
+        var target = total - Math.Min(total / 10, audio.SampleRate * 60 / 1000);
         var deadline = DateTime.UtcNow + audio.Duration + TimeSpan.FromSeconds(3);
         var lastPosition = -1;
         var lastChange = DateTime.UtcNow;
@@ -177,9 +186,9 @@ public sealed class AndroidAudioOutput : IAudioOutput
             }
 
             var position = track.PlaybackHeadPosition;
-            if (position >= total)
+            if (position >= target)
             {
-                return PlaybackOutcome.Completed;
+                break;
             }
 
             var now = DateTime.UtcNow;
@@ -188,10 +197,6 @@ public sealed class AndroidAudioOutput : IAudioOutput
                 lastPosition = position;
                 lastChange = now;
             }
-            else if (now - lastChange > TimeSpan.FromMilliseconds(300) && position >= total - silentTailFrames)
-            {
-                return PlaybackOutcome.Completed;
-            }
             else if (now - lastChange > StallLimit)
             {
                 return new PlaybackOutcome(PlaybackOutcomeKind.Failed, $"Playback stalled at {position}/{total}.");
@@ -199,10 +204,29 @@ public sealed class AndroidAudioOutput : IAudioOutput
 
             if (now > deadline)
             {
-                return new PlaybackOutcome(PlaybackOutcomeKind.Failed, "Playback timed out.");
+                return new PlaybackOutcome(PlaybackOutcomeKind.Failed, $"Playback timed out at {position}/{total}.");
             }
 
-            await Task.Delay(20, cancellationToken);
+            await Task.Delay(15, cancellationToken);
+        }
+
+        await WaitForPresentationAsync(track, target, cancellationToken);
+        return focusLost.IsCompleted ? new PlaybackOutcome(PlaybackOutcomeKind.Interrupted) : PlaybackOutcome.Completed;
+    }
+
+    /// <summary>Waits (at most 600 ms) until the output reports the target frame as heard.</summary>
+    private static async Task WaitForPresentationAsync(AudioTrack track, long targetFrame, CancellationToken cancellationToken)
+    {
+        var timestamp = new AudioTimestamp();
+        var until = DateTime.UtcNow + TimeSpan.FromMilliseconds(600);
+        while (DateTime.UtcNow < until)
+        {
+            if (track.GetTimestamp(timestamp) && timestamp.FramePosition >= targetFrame)
+            {
+                return;
+            }
+
+            await Task.Delay(15, cancellationToken);
         }
     }
 

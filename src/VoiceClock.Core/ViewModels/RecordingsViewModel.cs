@@ -193,7 +193,17 @@ public sealed class RecordingsViewModel : ObservableObject, IDisposable
         try
         {
             await _initializer.EnsureInitializedAsync();
-            Rebuild();
+
+            // Coming back from the recorder: update rows in place so the list keeps its scroll position.
+            if (Groups.Count == 0)
+            {
+                Rebuild();
+            }
+            else
+            {
+                Refresh([]);
+            }
+
             if (!_subscribed)
             {
                 _repository.Changed += OnAssetsChanged;

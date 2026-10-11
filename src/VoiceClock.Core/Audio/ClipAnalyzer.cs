@@ -36,6 +36,9 @@ public static class ClipAnalyzer
     /// <summary>At least this much audio must stand out from the background.</summary>
     public const int MinimumSpeechWindows = 5;
 
+    /// <summary>Window run length used to tell sustained voice from isolated clicks.</summary>
+    private const int SustainWindows = 4;
+
     public static ClipAnalysis Analyze(PcmAudio audio)
     {
         ArgumentNullException.ThrowIfNull(audio);
@@ -88,24 +91,39 @@ public static class ClipAnalyzer
         threshold = Math.Min(threshold, loudest * 0.18);
         threshold = Math.Max(threshold, AudioMath.FromDbfs(AbsoluteSilenceDbfs));
 
-        int first = -1, last = -1, active = 0;
+        var isActive = new bool[windowCount];
+        int active = 0;
         double speechSquares = 0;
         for (var w = 0; w < windowCount; w++)
         {
             if (rms[w] >= threshold)
             {
-                if (first < 0)
-                {
-                    first = w;
-                }
-
-                last = w;
+                isActive[w] = true;
                 active++;
                 speechSquares += rms[w] * rms[w];
             }
         }
 
-        var hasSpeech = loudest >= AudioMath.FromDbfs(MinimumSpeechLevelDbfs) && active >= MinimumSpeechWindows;
+        // Speech starts and ends where the energy is sustained (3 of 4 consecutive windows), so a
+        // click when the microphone opens or a tap at the end is not taken for the voice.
+        int first = -1, last = -1;
+        for (var w = 0; w < windowCount && first < 0; w++)
+        {
+            if (isActive[w] && CountActive(isActive, w, w + SustainWindows - 1) >= SustainWindows - 1)
+            {
+                first = w;
+            }
+        }
+
+        for (var w = windowCount - 1; w >= 0 && last < 0; w--)
+        {
+            if (isActive[w] && CountActive(isActive, w - SustainWindows + 1, w) >= SustainWindows - 1)
+            {
+                last = w;
+            }
+        }
+
+        var hasSpeech = loudest >= AudioMath.FromDbfs(MinimumSpeechLevelDbfs) && active >= MinimumSpeechWindows && first >= 0 && last >= first;
         var speechStart = hasSpeech ? first * window : 0;
         var speechEnd = hasSpeech ? Math.Min(n, (last + 1) * window) : 0;
         var speechRms = hasSpeech ? Math.Sqrt(speechSquares / active) : 0;
@@ -119,5 +137,19 @@ public static class ClipAnalyzer
             speechEnd,
             AudioMath.ToDbfs(speechRms),
             AudioMath.ToDbfs(noiseFloor));
+    }
+
+    private static int CountActive(bool[] active, int from, int to)
+    {
+        var count = 0;
+        for (var i = Math.Max(0, from); i <= Math.Min(active.Length - 1, to); i++)
+        {
+            if (active[i])
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 }

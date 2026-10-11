@@ -453,6 +453,20 @@ public class RecordingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Returning_to_the_list_updates_rows_without_rebuilding_it()
+    {
+        await _vm.OnAppearingAsync();
+        var firstGroup = _vm.Groups[0];
+        _vm.Dispose(); // simulate being away (no live updates)
+
+        await _rig.RecordAsync("hour.01");
+        await _vm.OnAppearingAsync();
+
+        Assert.Same(firstGroup, _vm.Groups[0]);
+        Assert.True(Item("hour.01").IsUserRecording);
+    }
+
+    [Fact]
     public async Task Recording_a_full_sentence_adds_it_to_the_list()
     {
         await _vm.OnAppearingAsync();

@@ -20,6 +20,29 @@ public class ClipProcessingTests
     }
 
     [Fact]
+    public void Isolated_clicks_around_the_speech_are_not_taken_for_the_voice()
+    {
+        var click = Signals.Tone(5, peakDbfs: -1, frequency: 2000);
+        var clip = Signals.Concat(
+            Signals.Noise(50), click, Signals.Noise(600, seed: 2),
+            Signals.Tone(600, peakDbfs: -10),
+            Signals.Noise(400, seed: 3), click, Signals.Noise(100, seed: 4));
+
+        var analysis = ClipAnalyzer.Analyze(clip);
+        var speechStart = Ms(50 + 5 + 600);
+
+        Assert.InRange(analysis.SpeechStartSample, speechStart - Window, speechStart + Window);
+        Assert.InRange(analysis.SpeechEndSample, speechStart + Ms(600) - Window, speechStart + Ms(600) + Window);
+    }
+
+    [Fact]
+    public void A_lone_click_is_not_speech()
+    {
+        var clip = Signals.Concat(Signals.Noise(400), Signals.Tone(5, peakDbfs: -1, frequency: 2000), Signals.Noise(400, seed: 9));
+        Assert.False(ClipAnalyzer.Analyze(clip).HasSpeech);
+    }
+
+    [Fact]
     public void Silence_and_faint_hiss_are_not_speech()
     {
         Assert.False(ClipAnalyzer.Analyze(Signals.Silence(1000)).HasSpeech);
