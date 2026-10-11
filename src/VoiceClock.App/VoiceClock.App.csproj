@@ -19,9 +19,13 @@
     <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
-  <!-- Release produces both an Android App Bundle (Play Store) and an APK (direct install). -->
+  <!-- Release produces both an Android App Bundle (Play Store) and an APK (direct install).
+       Phones only (arm64-v8a, every Android phone since about 2017): leaving out the x86_64 code for
+       emulators and Chromebooks keeps the APK about 10 MB smaller to download and share.
+       Debug builds keep the default ABIs so the emulator still works. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <AndroidPackageFormats>aab;apk</AndroidPackageFormats>
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <!--

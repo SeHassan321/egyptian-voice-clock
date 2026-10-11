@@ -139,7 +139,7 @@ with the same or a lower number. `ApplicationDisplayVersion` (e.g. `1.0.0`) is w
 | Minimum Android | 8.0 (API 26): notification channels, foreground-service start and audio-focus requests |
 | Permissions | microphone (asked only when recording), vibrate, foreground service (widget speech) |
 | Not requested | internet, storage, location, contacts, phone state |
-| Release packaging | trimmed, AAB + APK |
+| Release packaging | trimmed, AAB + APK, arm64-v8a only (all phones since about 2017; Debug builds also include x86_64 for the emulator) |
 
 ## Verified environments
 
