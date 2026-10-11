@@ -31,7 +31,6 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Label Text="{Binding Message}" FontSize="18" TextColor="{StaticResource Primary}" />
 
             <!-- Recordings -->
             <Label Text="{x:Static res:Strings.Setup_Section_Recordings}" Style="{StaticResource SectionTitle}" />
@@ -62,6 +61,7 @@
                 <Button Grid.Column="0" Text="{x:Static res:Strings.Setup_TestSelected}" Command="{Binding TestSelectedCommand}" Style="{StaticResource PrimaryButton}" />
                 <Button Grid.Column="1" Text="{x:Static res:Strings.Setup_TestSegmentsOnly}" Command="{Binding TestSegmentsOnlyCommand}" />
             </Grid>
+            <Label Text="{Binding Message}" FontSize="18" TextColor="{StaticResource Primary}" />
 
             <!-- Options -->
             <Label Text="{x:Static res:Strings.Setup_Section_Options}" Style="{StaticResource SectionTitle}" />

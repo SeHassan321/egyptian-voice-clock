@@ -19,11 +19,41 @@ public sealed class ClipItemViewModel : ObservableObject
     private bool _isRequired;
 
     public ClipItemViewModel(CatalogEntry entry, AssetStatus status, bool isRequired)
+        : this(entry, status, isRequired, _ => Task.CompletedTask, _ => Task.CompletedTask, _ => Task.CompletedTask, _ => { })
+    {
+    }
+
+    /// <summary>
+    /// Each row carries its own commands, so the list template binds to them directly
+    /// (no ancestor lookups or command parameters, which proved unreliable on phones).
+    /// </summary>
+    public ClipItemViewModel(
+        CatalogEntry entry,
+        AssetStatus status,
+        bool isRequired,
+        Func<ClipItemViewModel, Task> record,
+        Func<ClipItemViewModel, Task> play,
+        Func<ClipItemViewModel, Task> delete,
+        Action<Exception> onError)
     {
         Entry = entry;
         _status = status;
         _isRequired = isRequired;
+        RecordCommand = new AsyncCommand(() => record(this), onError);
+        PlayCommand = new AsyncCommand(() => play(this), onError, () => IsReady);
+        DeleteCommand = new AsyncCommand(() => delete(this), onError, () => HasOwnRecording);
     }
+
+    public AsyncCommand RecordCommand { get; }
+
+    public AsyncCommand PlayCommand { get; }
+
+    /// <summary>Deletes the own recording (the shipped default, if any, becomes effective again).</summary>
+    public AsyncCommand DeleteCommand { get; }
+
+    public bool HasOwnRecording => _status.HasUserRecording;
+
+    public string DeleteText => _status.HasBundledDefault ? Strings.Recordings_DeleteMine : Strings.Recordings_Delete;
 
     public CatalogEntry Entry { get; }
 
@@ -59,10 +89,14 @@ public sealed class ClipItemViewModel : ObservableObject
         {
             nameof(Status), nameof(IsReady), nameof(IsMissing), nameof(IsInvalid), nameof(IsUserRecording),
             nameof(NeedsAttention), nameof(StatusText), nameof(CanRestoreDefault), nameof(CanDelete),
+            nameof(HasOwnRecording), nameof(DeleteText),
         })
         {
             OnPropertyChanged(name);
         }
+
+        PlayCommand.RaiseCanExecuteChanged();
+        DeleteCommand.RaiseCanExecuteChanged();
     }
 }
 
@@ -242,7 +276,14 @@ public sealed class RecordingsViewModel : ObservableObject, IDisposable
         foreach (var category in GroupOrder)
         {
             var items = entries.Where(e => e.Category == category)
-                .Select(e => new ClipItemViewModel(e, _repository.GetStatus(e.Id), e.IsRequired(IncludeDayPeriod)))
+                .Select(e => new ClipItemViewModel(
+                    e,
+                    _repository.GetStatus(e.Id),
+                    e.IsRequired(IncludeDayPeriod),
+                    item => _navigation.OpenRecorderAsync(item.Id),
+                    PlayAsync,
+                    item => item.Status.HasBundledDefault ? RestoreDefaultAsync(item) : DeleteAsync(item),
+                    HandleError))
                 .ToList();
             if (items.Count == 0)
             {
@@ -314,6 +355,7 @@ public sealed class RecordingsViewModel : ObservableObject, IDisposable
         if (next is null)
         {
             Message = Strings.Recordings_NothingMissing;
+            await _dialogs.ShowMessageAsync(Strings.Recordings_Title, Strings.Recordings_NothingMissing);
             return;
         }
 
@@ -335,5 +377,6 @@ public sealed class RecordingsViewModel : ObservableObject, IDisposable
     {
         _log.Warn("Recordings action failed.", ex);
         Message = Strings.Common_Error_Message;
+        _ = _dialogs.ShowMessageAsync(Strings.Common_Error_Title, Texts.ErrorDetails(ex));
     }
 }

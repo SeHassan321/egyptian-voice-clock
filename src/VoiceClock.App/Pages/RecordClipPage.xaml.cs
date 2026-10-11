@@ -30,6 +30,10 @@ public partial class RecordClipPage : ContentPage, IQueryAttributable
         catch (Exception ex)
         {
             _log.Warn($"Could not open recorder for '{assetId}'.", ex);
+            await DisplayAlertAsync(
+                VoiceClock.Core.Resources.Strings.Common_Error_Title,
+                VoiceClock.Core.Resources.Strings.Recorder_OpenFailed + $"\n\n({ex.GetType().Name}: {ex.Message})",
+                VoiceClock.Core.Resources.Strings.Common_Ok);
             await Shell.Current.GoToAsync("..");
         }
     }

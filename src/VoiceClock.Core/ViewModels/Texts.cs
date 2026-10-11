@@ -68,6 +68,9 @@ internal static class Texts
         return Strings.Recorder_Take_Ok;
     }
 
+    /// <summary>A friendly error with the technical cause underneath, so the owner can report it.</summary>
+    public static string ErrorDetails(Exception ex) => Strings.Common_Error_Message + "\n\n(" + ex.GetType().Name + ": " + ex.Message + ")";
+
     /// <summary>Times for the setup person, e.g. "1:43".</summary>
     public static string Clock(TimeOnly time)
     {

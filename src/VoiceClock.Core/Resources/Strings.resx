@@ -54,12 +54,12 @@
   <data name="Setup_Coverage_Incomplete" xml:space="preserve"><value>فيه {0} من {1} وقت مش هينفع يتقالوا. مثلًا {2}: ناقص {3}.</value></data>
   <data name="Setup_Damaged" xml:space="preserve"><value>فيه {0} تسجيل بايظ ومحتاج يتسجّل تاني.</value></data>
   <data name="Setup_Section_Backup" xml:space="preserve"><value>نسخة احتياطية</value></data>
-  <data name="Setup_ExportBackup" xml:space="preserve"><value>احفظ نسخة من تسجيلاتي</value></data>
-  <data name="Setup_ShareBackup" xml:space="preserve"><value>ابعت نسخة من تسجيلاتي</value></data>
+  <data name="Setup_ExportBackup" xml:space="preserve"><value>احفظ نسخة من الصوت</value></data>
+  <data name="Setup_ShareBackup" xml:space="preserve"><value>ابعت نسخة من الصوت</value></data>
   <data name="Setup_ImportBackup" xml:space="preserve"><value>رجّع نسخة احتياطية</value></data>
   <data name="Setup_ExportFullVoice" xml:space="preserve"><value>ابعت الصوت كامل (عشان ينزل مع التطبيق)</value></data>
   <data name="Setup_Backup_Saved" xml:space="preserve"><value>اتحفظت نسخة فيها {0} تسجيل.</value></data>
-  <data name="Setup_Backup_Empty" xml:space="preserve"><value>مفيش تسجيلات خاصة بيك لسه.</value></data>
+  <data name="Setup_Backup_Empty" xml:space="preserve"><value>مفيش تسجيلات لسه.</value></data>
   <data name="Setup_Backup_Cancelled" xml:space="preserve"><value>اتلغى.</value></data>
   <data name="Setup_Import_ConfirmTitle" xml:space="preserve"><value>رجّع نسخة احتياطية</value></data>
   <data name="Setup_Import_ConfirmMessage" xml:space="preserve"><value>التسجيلات اللي في النسخة هتحل محل تسجيلاتك لنفس الكلمات. تكمّل؟</value></data>
@@ -126,4 +126,6 @@
   <data name="Setup_ShareReport" xml:space="preserve"><value>ابعت تقرير المشاكل</value></data>
   <data name="Setup_NoProblems" xml:space="preserve"><value>مفيش مشاكل متسجّلة ✓</value></data>
   <data name="Setup_ReportHint" xml:space="preserve"><value>لو التطبيق عمل مشكلة، ابعت التقرير ده للي عمل التطبيق.</value></data>
+  <data name="Recordings_DeleteMine" xml:space="preserve"><value>امسح تسجيلي</value></data>
+  <data name="Recorder_OpenFailed" xml:space="preserve"><value>مقدرتش أفتح شاشة التسجيل.</value></data>
 </root>

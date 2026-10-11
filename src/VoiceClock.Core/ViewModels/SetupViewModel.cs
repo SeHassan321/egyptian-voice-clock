@@ -83,9 +83,11 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         CheckEverythingCommand = new AsyncCommand(CheckEverythingAsync, HandleError);
         OpenRecordingsCommand = new AsyncCommand(() => _navigation.OpenRecordingsAsync(), HandleError);
         RecordNextMissingCommand = new AsyncCommand(RecordNextMissingAsync, HandleError);
-        ExportBackupCommand = new AsyncCommand(() => ExportAsync(VoicePackScope.UserRecordings, share: false), HandleError);
-        ShareBackupCommand = new AsyncCommand(() => ExportAsync(VoicePackScope.UserRecordings, share: true), HandleError);
-        ExportFullVoiceCommand = new AsyncCommand(() => ExportAsync(VoicePackScope.Everything, share: true), HandleError);
+        // A backup holds the whole voice currently in use (own recordings and shipped clips),
+        // so it is useful even on a phone that only uses the built-in voice.
+        ExportBackupCommand = new AsyncCommand(() => ExportAsync(VoicePackScope.Everything, share: false, fullVoiceName: false), HandleError);
+        ShareBackupCommand = new AsyncCommand(() => ExportAsync(VoicePackScope.Everything, share: true, fullVoiceName: false), HandleError);
+        ExportFullVoiceCommand = new AsyncCommand(() => ExportAsync(VoicePackScope.Everything, share: true, fullVoiceName: true), HandleError);
         ImportBackupCommand = new AsyncCommand(ImportAsync, HandleError);
         OpenVolumeCommand = new RelayCommand(_volume.ShowSystemVolumePanel);
         ShareReportCommand = new AsyncCommand(ShareReportAsync, HandleError);
@@ -354,7 +356,8 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         Message = Strings.Setup_Checking;
         var verification = await _repository.VerifyAllAsync();
         Refresh();
-        Message = verification.AllValid ? string.Empty : Texts.Format(Strings.Setup_Damaged, verification.InvalidIds.Count);
+        Message = string.Empty;
+        await NotifyAsync(verification.AllValid ? CoverageText : Texts.Format(Strings.Setup_Damaged, verification.InvalidIds.Count));
     }
 
     private async Task RecordNextMissingAsync()
@@ -363,18 +366,18 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
             .FirstOrDefault(e => !_repository.IsAvailable(e.Id));
         if (next is null)
         {
-            Message = Strings.Recordings_NothingMissing;
+            await NotifyAsync(Strings.Recordings_NothingMissing);
             return;
         }
 
         await _navigation.OpenRecorderAsync(next.Id);
     }
 
-    private async Task ExportAsync(VoicePackScope scope, bool share)
+    private async Task ExportAsync(VoicePackScope scope, bool share, bool fullVoiceName)
     {
-        if (scope == VoicePackScope.UserRecordings && !HasUserRecordings())
+        if (!_catalog.Entries.Any(e => _repository.IsAvailable(e.Id)) && _repository.AvailableFullPhraseIds.Count == 0)
         {
-            Message = Strings.Setup_Backup_Empty;
+            await NotifyAsync(Strings.Setup_Backup_Empty);
             return;
         }
 
@@ -382,7 +385,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         async Task Write(Stream stream, CancellationToken token) =>
             exported = await _repository.ExportAsync(stream, scope, _appInfo.VersionLabel, token);
 
-        var fileName = scope == VoicePackScope.Everything
+        var fileName = fullVoiceName
             ? FullVoiceFileName
             : string.Create(CultureInfo.InvariantCulture, $"voice-clock-backup-{DateTime.Now:yyyy-MM-dd-HHmm}{VoicePackFormat.FileExtension}");
 
@@ -394,14 +397,21 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         }
 
         var saved = await _backup.SaveAsync(fileName, Write);
-        Message = saved ? Texts.Format(Strings.Setup_Backup_Saved, exported) : Strings.Setup_Backup_Cancelled;
+        await NotifyAsync(saved ? Texts.Format(Strings.Setup_Backup_Saved, exported) : Strings.Setup_Backup_Cancelled);
+    }
+
+    /// <summary>Shows a result where it cannot be missed (a dialog) and keeps it on the page too.</summary>
+    private async Task NotifyAsync(string text)
+    {
+        Message = text;
+        await _dialogs.ShowMessageAsync(Strings.Setup_Title, text);
     }
 
     private async Task ShareReportAsync()
     {
         if (!_diagnostics.HasEntries)
         {
-            Message = Strings.Setup_NoProblems;
+            await NotifyAsync(Strings.Setup_NoProblems);
             return;
         }
 
@@ -435,7 +445,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         var stream = await _backup.PickAsync();
         if (stream is null)
         {
-            Message = Strings.Setup_Backup_Cancelled;
+            await NotifyAsync(Strings.Setup_Backup_Cancelled);
             return;
         }
 
@@ -447,7 +457,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
 
         if (!result.Accepted)
         {
-            Message = Strings.Setup_Import_Rejected;
+            await NotifyAsync(Strings.Setup_Import_Rejected);
             return;
         }
 
@@ -463,7 +473,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
             parts.Add(Texts.Format(Strings.Setup_Import_Skipped, skipped));
         }
 
-        Message = string.Join(" ", parts);
+        await NotifyAsync(string.Join(" ", parts));
         Refresh();
     }
 
@@ -549,5 +559,6 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
     {
         _log.Warn("Setup action failed.", ex);
         Message = Strings.Common_Error_Message;
+        _ = _dialogs.ShowMessageAsync(Strings.Common_Error_Title, Texts.ErrorDetails(ex));
     }
 }

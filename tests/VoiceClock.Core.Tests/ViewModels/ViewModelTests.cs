@@ -262,13 +262,44 @@ public class SetupViewModelTests : IDisposable
     }
 
     [Fact]
-    public async Task Backup_needs_own_recordings()
+    public async Task Backup_with_nothing_recorded_says_so_in_a_dialog()
     {
         await _vm.OnAppearingAsync();
         await _vm.ExportBackupCommand.ExecuteAsync();
 
         Assert.Equal(Strings.Setup_Backup_Empty, _vm.Message);
+        Assert.Contains(_dialogs.Shown, m => m.Contains(Strings.Setup_Backup_Empty, StringComparison.Ordinal));
         Assert.Null(_backup.LastWritten);
+    }
+
+    [Fact]
+    public async Task Backup_works_on_a_phone_that_only_uses_the_built_in_voice()
+    {
+        using var rig = new TestRig(new FakeBundledSource(PackBuilder.Build(["hour.01", "hour.02", "minute.43"])));
+        var backup = new FakeBackupFiles();
+        var dialogs = new FakeDialogs();
+        using var vm = new SetupViewModel(
+            rig.Initializer, rig.Settings, rig.Repository, TestCatalog.Catalog, TestCatalog.Engine, rig.Announcer,
+            backup, dialogs, new FakeNavigation(), new FakeVolume(), new FakeAppVersion(), new ImmediateDispatcher(),
+            new FileAppLog(Path.Combine(rig.Locations.DataDirectory, "app.log")));
+        await vm.OnAppearingAsync();
+
+        await vm.ShareBackupCommand.ExecuteAsync();
+
+        Assert.True(backup.LastWasShare);
+        Assert.StartsWith("voice-clock-backup-", backup.LastFileName);
+        Assert.Equal("اتحفظت نسخة فيها 3 تسجيل.", vm.Message);
+    }
+
+    [Fact]
+    public async Task Errors_are_shown_in_a_dialog_with_the_cause()
+    {
+        await _vm.OnAppearingAsync();
+        _navigation.ThrowOnNext = new InvalidOperationException("route missing");
+
+        await _vm.OpenRecordingsCommand.ExecuteAsync();
+
+        Assert.Contains(_dialogs.Shown, m => m.Contains("route missing", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -514,6 +545,44 @@ public class RecordingsViewModelTests : IDisposable
         await _vm.OnAppearingAsync();
         await _vm.PlayCommand.ExecuteAsync(Item("hour.12"));
         Assert.Single(_rig.Output.Played);
+    }
+
+    [Fact]
+    public async Task Each_row_has_working_record_play_and_delete_buttons()
+    {
+        await _rig.RecordAsync("hour.01", "hour.12");
+        await _vm.OnAppearingAsync();
+
+        await Item("hour.05").RecordCommand.ExecuteAsync();
+        Assert.Equal(new[] { "recorder:hour.05" }, _navigation.Visits.ToArray());
+
+        Assert.False(Item("hour.05").PlayCommand.CanExecute(null));
+        await Item("hour.01").PlayCommand.ExecuteAsync();
+        Assert.Single(_rig.Output.Played);
+
+        // Own recording without a default: "امسح".
+        Assert.True(Item("hour.01").HasOwnRecording);
+        Assert.Equal(Strings.Recordings_Delete, Item("hour.01").DeleteText);
+        _dialogs.Answers.Enqueue(true);
+        await Item("hour.01").DeleteCommand.ExecuteAsync();
+        Assert.True(Item("hour.01").IsMissing);
+        Assert.False(Item("hour.01").DeleteCommand.CanExecute(null));
+
+        // Own recording over the built-in voice: "امسح تسجيلي" brings the built-in clip back.
+        Assert.Equal(Strings.Recordings_DeleteMine, Item("hour.12").DeleteText);
+        _dialogs.Answers.Enqueue(true);
+        await Item("hour.12").DeleteCommand.ExecuteAsync();
+        Assert.Equal(AssetSource.Bundled, _rig.Repository.GetStatus("hour.12").Source);
+        Assert.False(Item("hour.12").HasOwnRecording);
+    }
+
+    [Fact]
+    public async Task Built_in_clips_without_an_own_recording_offer_no_delete()
+    {
+        await _vm.OnAppearingAsync();
+        Assert.False(Item("hour.12").HasOwnRecording);
+        Assert.False(Item("hour.12").DeleteCommand.CanExecute(null));
+        Assert.True(Item("hour.12").RecordCommand.CanExecute(null));
     }
 
     [Fact]
