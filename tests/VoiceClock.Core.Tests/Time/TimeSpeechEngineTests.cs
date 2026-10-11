@@ -175,10 +175,10 @@ public class TimeSpeechEngineTests
         var plan = _engine.BuildPlan(new TimeOnly(14, 45), new TimeSpeechSettings(IncludeDayPeriod: true));
 
         Assert.Equal(
-            ["hour.03", "minute.45", "period.pm"],
+            new[] { "hour.03", "minute.45", "period.pm" },
             plan.Segments.Select(s => s.AssetId).ToArray());
         Assert.Equal(
-            [SegmentRole.Hour, SegmentRole.Minute, SegmentRole.DayPeriod],
+            new[] { SegmentRole.Hour, SegmentRole.Minute, SegmentRole.DayPeriod },
             plan.Segments.Select(s => s.Role).ToArray());
     }
 
