@@ -32,6 +32,20 @@ jobs:
             --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=normal" \
             --results-directory TestResults 2>&1 | tee test.log
 
+      - name: Summarize test results
+        if: always()
+        shell: bash
+        run: |
+          trx=$(find TestResults -name '*.trx' | head -n 1)
+          if [ -n "$trx" ]; then
+            counters=$(grep -o '<Counters [^>]*>' "$trx" | head -n 1)
+            total=$(echo "$counters" | grep -o 'total="[0-9]*"' | grep -o '[0-9]*')
+            passed=$(echo "$counters" | grep -o 'passed="[0-9]*"' | grep -o '[0-9]*')
+            failed=$(echo "$counters" | grep -o 'failed="[0-9]*"' | grep -o '[0-9]*')
+            echo "::notice title=Unit tests::${passed}/${total} passed, ${failed} failed"
+            echo "### Unit tests: ${passed}/${total} passed, ${failed} failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Report test failures
         if: failure()
         shell: bash
