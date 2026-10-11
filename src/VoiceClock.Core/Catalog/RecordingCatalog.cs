@@ -88,6 +88,9 @@ public sealed class RecordingCatalog
         _byId = entries.ToDictionary(e => e.Id, StringComparer.Ordinal);
     }
 
+    /// <summary>Language of the phrase dictionary, e.g. "ar-EG".</summary>
+    public string Locale => _engine.Rules.Locale;
+
     /// <summary>All standard clips in guided recording order (full-phrase overrides are not listed).</summary>
     public IReadOnlyList<CatalogEntry> Entries { get; }
 

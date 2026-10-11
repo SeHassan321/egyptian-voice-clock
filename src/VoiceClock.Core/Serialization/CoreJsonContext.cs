@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using VoiceClock.Core.Settings;
+using VoiceClock.Core.Storage;
 using VoiceClock.Core.Time;
 
 namespace VoiceClock.Core.Serialization;
@@ -14,6 +16,10 @@ namespace VoiceClock.Core.Serialization;
     ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip,
     AllowTrailingCommas = true)]
 [JsonSerializable(typeof(SpeechRulesDocument))]
+[JsonSerializable(typeof(VoiceManifestDocument))]
+[JsonSerializable(typeof(BundledIndexDocument))]
+[JsonSerializable(typeof(VoicePackManifestDocument))]
+[JsonSerializable(typeof(AppSettingsDocument))]
 internal sealed partial class CoreJsonContext : JsonSerializerContext
 {
 }
