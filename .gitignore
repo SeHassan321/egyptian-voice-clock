@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+artifacts/
+*.binlog
+
+# IDEs
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Test results
+TestResults/
+*.trx
+
+# Android signing material must never be committed.
+*.keystore
+*.jks
+*.p12
+signing.env

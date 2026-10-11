@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Platform-independent heart of the app: time rules, audio processing, storage,
+    services and view models. It has no package dependencies, so it builds and is
+    fully unit-tested without the Android toolchain.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>VoiceClock.Core</RootNamespace>
+    <AssemblyName>VoiceClock.Core</AssemblyName>
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NeutralLanguage>ar-EG</NeutralLanguage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Egyptian Arabic phrase dictionary. Edit this file to correct a word;
+         the algorithm never needs to change. -->
+    <EmbeddedResource Include="Rules\speech-rules-ar-EG.json" LogicalName="VoiceClock.Core.Rules.speech-rules-ar-EG.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- User-facing text lives in a .resx so the app can be localized later.
+         A public, strongly typed Strings class is generated at build time. -->
+    <EmbeddedResource Update="Resources\Strings.resx">
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedClassName>Strings</StronglyTypedClassName>
+      <StronglyTypedNamespace>VoiceClock.Core.Resources</StronglyTypedNamespace>
+      <StronglyTypedFileName>$(IntermediateOutputPath)Strings.Designer.cs</StronglyTypedFileName>
+      <PublicClass>true</PublicClass>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="VoiceClock.Core.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+<Project>
+  <!-- Settings shared by every project in the solution. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <!-- NU1900 only means "vulnerability data could not be downloaded" (for example on an
+         offline machine). It must never fail a build. Real advisories (NU1901-NU1904) still warn. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900</WarningsNotAsErrors>
+    <Authors>Hassan</Authors>
+    <Product>Egyptian Voice Clock</Product>
+  </PropertyGroup>
+</Project>

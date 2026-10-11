@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.cs text eol=lf
+*.xaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.svg text eol=lf
+*.wav binary
+*.zip binary
+*.png binary
