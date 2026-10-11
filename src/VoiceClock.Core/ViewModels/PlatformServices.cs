@@ -66,7 +66,7 @@ public interface IBackupFiles
     Task<bool> SaveAsync(string suggestedFileName, Func<Stream, CancellationToken, Task> writeContent, CancellationToken cancellationToken = default);
 
     /// <summary>Writes the content to a temporary file and opens the share sheet (WhatsApp, Drive, e-mail…).</summary>
-    Task ShareAsync(string fileName, Func<Stream, CancellationToken, Task> writeContent, CancellationToken cancellationToken = default);
+    Task ShareAsync(string fileName, string contentType, Func<Stream, CancellationToken, Task> writeContent, CancellationToken cancellationToken = default);
 
     /// <summary>Lets the user choose a backup to restore; null if cancelled.</summary>
     Task<Stream?> PickAsync(CancellationToken cancellationToken = default);

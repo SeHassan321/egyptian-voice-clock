@@ -23,8 +23,14 @@ public static class MauiProgram
 
         var services = builder.Services;
 
+        // Diagnostics: warnings and crashes go to logcat and to a small private file the owner can send.
+        services.AddSingleton(_ => new FileAppLog(
+            Path.Combine(FileSystem.Current.AppDataDirectory, "logs", "app.log"),
+            new AndroidAppLog()));
+        services.AddSingleton<IAppLog>(sp => sp.GetRequiredService<FileAppLog>());
+        services.AddSingleton<IDiagnosticLog>(sp => sp.GetRequiredService<FileAppLog>());
+
         // Core: rules, storage and audio logic (platform independent).
-        services.AddSingleton<IAppLog, AndroidAppLog>();
         services.AddSingleton(_ => SpeechRules.Default);
         services.AddSingleton<ITimeSpeechEngine, TimeSpeechEngine>();
         services.AddSingleton<RecordingCatalog>();
@@ -63,6 +69,8 @@ public static class MauiProgram
         services.AddTransient<RecordClipViewModel>();
         services.AddTransient<RecordClipPage>();
 
-        return builder.Build();
+        var app = builder.Build();
+        CrashReporting.Register(app.Services.GetRequiredService<FileAppLog>());
+        return app;
     }
 }

@@ -105,8 +105,13 @@ internal sealed class FakeBackupFiles : IBackupFiles
         return true;
     }
 
-    public Task ShareAsync(string fileName, Func<Stream, CancellationToken, Task> writeContent, CancellationToken cancellationToken = default) =>
-        Capture(fileName, writeContent, share: true, cancellationToken);
+    public string? LastContentType { get; private set; }
+
+    public Task ShareAsync(string fileName, string contentType, Func<Stream, CancellationToken, Task> writeContent, CancellationToken cancellationToken = default)
+    {
+        LastContentType = contentType;
+        return Capture(fileName, writeContent, share: true, cancellationToken);
+    }
 
     public Task<Stream?> PickAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<Stream?>(PickedFile is null ? null : new MemoryStream(PickedFile));

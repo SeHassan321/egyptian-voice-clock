@@ -70,7 +70,7 @@ public sealed class AndroidBackupFiles : IBackupFiles
         return true;
     }
 
-    public async Task ShareAsync(string fileName, Func<System.IO.Stream, CancellationToken, Task> writeContent, CancellationToken cancellationToken = default)
+    public async Task ShareAsync(string fileName, string contentType, Func<System.IO.Stream, CancellationToken, Task> writeContent, CancellationToken cancellationToken = default)
     {
         var directory = Path.Combine(FileSystem.Current.CacheDirectory, "share");
         Directory.CreateDirectory(directory);
@@ -87,7 +87,7 @@ public sealed class AndroidBackupFiles : IBackupFiles
         await Share.Default.RequestAsync(new ShareFileRequest
         {
             Title = Strings.Setup_Section_Backup,
-            File = new ShareFile(path, VoicePackFormat.MimeType),
+            File = new ShareFile(path, contentType),
         });
     }
 

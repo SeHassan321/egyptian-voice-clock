@@ -1,4 +1,5 @@
 using VoiceClock.Core.Catalog;
+using VoiceClock.Core.Diagnostics;
 using VoiceClock.Core.Playback;
 using VoiceClock.Core.Resources;
 using VoiceClock.Core.Storage;
@@ -152,13 +153,15 @@ public class SetupViewModelTests : IDisposable
     private readonly FakeBackupFiles _backup = new();
     private readonly FakeDialogs _dialogs = new();
     private readonly FakeNavigation _navigation = new();
+    private readonly FileAppLog _diagnostics;
     private readonly SetupViewModel _vm;
 
     public SetupViewModelTests()
     {
+        _diagnostics = new FileAppLog(Path.Combine(_rig.Locations.DataDirectory, "logs", "app.log"));
         _vm = new SetupViewModel(
             _rig.Initializer, _rig.Settings, _rig.Repository, TestCatalog.Catalog, TestCatalog.Engine, _rig.Announcer,
-            _backup, _dialogs, _navigation, new FakeVolume(), new FakeAppVersion(), new ImmediateDispatcher());
+            _backup, _dialogs, _navigation, new FakeVolume(), new FakeAppVersion(), new ImmediateDispatcher(), _diagnostics);
     }
 
     public void Dispose()
@@ -363,6 +366,28 @@ public class SetupViewModelTests : IDisposable
         await _vm.RecordNextMissingCommand.ExecuteAsync();
 
         Assert.Equal(new[] { "recorder:hour.02" }, _navigation.Visits.ToArray());
+    }
+
+    [Fact]
+    public async Task Problem_report_is_shared_as_text_only_when_something_was_recorded()
+    {
+        await _vm.OnAppearingAsync();
+        Assert.False(_vm.HasProblemReport);
+        await _vm.ShareReportCommand.ExecuteAsync();
+        Assert.Equal(Strings.Setup_NoProblems, _vm.Message);
+        Assert.Null(_backup.LastWritten);
+
+        _diagnostics.Warn("Playback failed: stalled", new InvalidOperationException("device"));
+        await _vm.OnAppearingAsync();
+        Assert.True(_vm.HasProblemReport);
+
+        await _vm.ShareReportCommand.ExecuteAsync();
+
+        Assert.Equal("text/plain", _backup.LastContentType);
+        var text = System.Text.Encoding.UTF8.GetString(_backup.LastWritten!);
+        Assert.Contains("1.0.0 (1)", text);
+        Assert.Contains("Playback failed: stalled", text);
+        Assert.Contains("InvalidOperationException", text);
     }
 
     internal static async Task WaitUntil(Func<bool> condition)

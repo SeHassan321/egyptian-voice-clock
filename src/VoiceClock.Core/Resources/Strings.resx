@@ -122,4 +122,8 @@
   <data name="Recorder_MaxReached" xml:space="preserve"><value>وصلت لأقصى مدة، فالتسجيل وقف لوحده.</value></data>
   <data name="Recorder_FullPhraseInfo" xml:space="preserve"><value>الجملة دي هتتقال بدل القطع في الوقت ده بس.</value></data>
   <data name="Recorder_NotSaved" xml:space="preserve"><value>لسه ما اتحفظش</value></data>
+  <data name="Setup_Section_Help" xml:space="preserve"><value>مساعدة</value></data>
+  <data name="Setup_ShareReport" xml:space="preserve"><value>ابعت تقرير المشاكل</value></data>
+  <data name="Setup_NoProblems" xml:space="preserve"><value>مفيش مشاكل متسجّلة ✓</value></data>
+  <data name="Setup_ReportHint" xml:space="preserve"><value>لو التطبيق عمل مشكلة، ابعت التقرير ده للي عمل التطبيق.</value></data>
 </root>

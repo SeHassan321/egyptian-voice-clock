@@ -28,6 +28,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
     private readonly IVolumeControl _volume;
     private readonly IAppVersion _appInfo;
     private readonly IUiDispatcher _dispatcher;
+    private readonly IDiagnosticLog _diagnostics;
     private readonly IAppLog _log;
     private CancellationTokenSource? _pendingGapSave;
     private AppSettings _current = AppSettings.Default;
@@ -56,6 +57,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         IVolumeControl volume,
         IAppVersion appInfo,
         IUiDispatcher dispatcher,
+        IDiagnosticLog diagnostics,
         IAppLog? log = null)
     {
         _initializer = initializer;
@@ -70,6 +72,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         _volume = volume;
         _appInfo = appInfo;
         _dispatcher = dispatcher;
+        _diagnostics = diagnostics;
         _log = log ?? NullAppLog.Instance;
 
         TestNowCommand = new AsyncCommand(() => ReportAsync(_announcer.AnnounceNowAsync()), HandleError);
@@ -85,6 +88,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         ExportFullVoiceCommand = new AsyncCommand(() => ExportAsync(VoicePackScope.Everything, share: true), HandleError);
         ImportBackupCommand = new AsyncCommand(ImportAsync, HandleError);
         OpenVolumeCommand = new RelayCommand(_volume.ShowSystemVolumePanel);
+        ShareReportCommand = new AsyncCommand(ShareReportAsync, HandleError);
 
         _repository.Changed += OnAssetsChanged;
         _settings.Changed += OnSettingsChanged;
@@ -111,6 +115,11 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
     public AsyncCommand ImportBackupCommand { get; }
 
     public RelayCommand OpenVolumeCommand { get; }
+
+    public AsyncCommand ShareReportCommand { get; }
+
+    /// <summary>Whether warnings or crashes were recorded that the owner could send to the developer.</summary>
+    public bool HasProblemReport => _diagnostics.HasEntries;
 
     public int[] HourOptions { get; } = Enumerable.Range(1, 12).ToArray();
 
@@ -308,6 +317,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
 
         CoverageText = DescribeCoverage(summary.Coverage);
         OnPropertyChanged(nameof(TestPreviewText));
+        OnPropertyChanged(nameof(HasProblemReport));
     }
 
     private string DescribeCoverage(CoverageReport coverage)
@@ -378,13 +388,32 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
 
         if (share)
         {
-            await _backup.ShareAsync(fileName, Write);
+            await _backup.ShareAsync(fileName, VoicePackFormat.MimeType, Write);
             Message = Texts.Format(Strings.Setup_Backup_Saved, exported);
             return;
         }
 
         var saved = await _backup.SaveAsync(fileName, Write);
         Message = saved ? Texts.Format(Strings.Setup_Backup_Saved, exported) : Strings.Setup_Backup_Cancelled;
+    }
+
+    private async Task ShareReportAsync()
+    {
+        if (!_diagnostics.HasEntries)
+        {
+            Message = Strings.Setup_NoProblems;
+            return;
+        }
+
+        async Task Write(Stream stream, CancellationToken token)
+        {
+            var header = System.Text.Encoding.UTF8.GetBytes(
+                string.Create(CultureInfo.InvariantCulture, $"Egyptian Voice Clock {_appInfo.VersionLabel}\nReport created {DateTime.UtcNow:yyyy-MM-dd HH:mm}Z\n\n"));
+            await stream.WriteAsync(header, token);
+            await _diagnostics.CopyToAsync(stream, token);
+        }
+
+        await _backup.ShareAsync("voice-clock-report.txt", "text/plain", Write);
     }
 
     private bool HasUserRecordings() =>

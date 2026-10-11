@@ -97,6 +97,18 @@
             <Button Text="{x:Static res:Strings.Setup_ImportBackup}" Command="{Binding ImportBackupCommand}" />
             <Button Text="{x:Static res:Strings.Setup_ExportFullVoice}" Command="{Binding ExportFullVoiceCommand}" />
 
+            <!-- Help -->
+            <Label Text="{x:Static res:Strings.Setup_Section_Help}" Style="{StaticResource SectionTitle}" />
+            <Label Text="{x:Static res:Strings.Setup_ReportHint}" Style="{StaticResource Hint}" IsVisible="{Binding HasProblemReport}" />
+            <Button Text="{x:Static res:Strings.Setup_ShareReport}" Command="{Binding ShareReportCommand}" IsVisible="{Binding HasProblemReport}" />
+            <Label Text="{x:Static res:Strings.Setup_NoProblems}" Style="{StaticResource Hint}">
+                <Label.Triggers>
+                    <DataTrigger TargetType="Label" Binding="{Binding HasProblemReport}" Value="True">
+                        <Setter Property="IsVisible" Value="False" />
+                    </DataTrigger>
+                </Label.Triggers>
+            </Label>
+
             <Label Text="{Binding VersionText}" Style="{StaticResource Hint}" HorizontalOptions="Center" Margin="0,24,0,8" />
         </VerticalStackLayout>
     </ScrollView>
