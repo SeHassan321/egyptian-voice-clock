@@ -16,6 +16,8 @@ says «الساعة اتنين إلا ربع»; no reading is needed.
   دوسة واحدة عليه تقول الساعة.
 - **مثال لطريقة النطق:** 1:25 «واحدة ونص إلا خمسة»، 1:43 «واحدة وتلاتة وأربعين دقيقة»،
   1:45 «اتنين إلا ربع». الجدول الكامل في [docs/ALL-TIMES.md](docs/ALL-TIMES.md).
+- **التقريب لأقرب 5 دقايق:** من الإعدادات ← «قرّب الوقت لأقرب 5 دقايق». لما يكون شغّال، 3:44 تتقال
+  «الساعة أربعة إلا ربع». مقفول من الأول، والتفاصيل في [docs/TIME-RULES.md](docs/TIME-RULES.md).
 
 ## Features
 
@@ -34,6 +36,7 @@ says «الساعة اتنين إلا ربع»; no reading is needed.
   ([voice pack](docs/VOICE-PACK.md)).
 - **Backup and restore** through the system file picker or share sheet (no storage permission).
 - **Fully offline**: no internet permission, no account, no cloud, no text-to-speech service.
+- Optional rounding to the nearest five minutes (3:44 → «الساعة أربعة إلا ربع»; only 23 clips needed).
 - Optional «صباحًا / مساءً», adjustable pause between words, loudness evening, error beep/vibration.
 
 ## Repository layout

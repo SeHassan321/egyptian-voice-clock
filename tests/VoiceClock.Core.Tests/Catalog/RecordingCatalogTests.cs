@@ -32,6 +32,38 @@ public class RecordingCatalogTests
     }
 
     [Fact]
+    public void Rounding_to_five_minutes_needs_only_the_hours_and_round_minutes()
+    {
+        var required = _catalog.RequiredEntries(includeDayPeriod: false, roundToFiveMinutes: true).ToList();
+
+        Assert.Equal(23, required.Count);
+        Assert.DoesNotContain(required, e => e.Category == AssetCategory.ExactMinute);
+        Assert.Equal(25, _catalog.RequiredEntries(includeDayPeriod: true, roundToFiveMinutes: true).Count());
+
+        var exactMinutes = _catalog.Entries.Where(e => e.Category == AssetCategory.ExactMinute).ToList();
+        Assert.Equal(48, exactMinutes.Count);
+        Assert.All(exactMinutes, e => Assert.True(e.IsRequired(includeDayPeriod: false)));
+        Assert.All(exactMinutes, e => Assert.False(e.IsRequired(includeDayPeriod: false, roundToFiveMinutes: true)));
+    }
+
+    [Fact]
+    public void With_rounding_the_plans_use_exactly_the_required_clips()
+    {
+        var settings = new TimeSpeechSettings(IncludeDayPeriod: true, RoundToFiveMinutes: true);
+        var used = new SortedSet<string>(StringComparer.Ordinal);
+        for (var minuteOfDay = 0; minuteOfDay < 1440; minuteOfDay++)
+        {
+            used.UnionWith(_engine.BuildPlan(new TimeOnly(minuteOfDay / 60, minuteOfDay % 60), settings).Segments.Select(s => s.AssetId));
+        }
+
+        var required = _catalog.RequiredEntries(includeDayPeriod: true, roundToFiveMinutes: true)
+            .Select(e => e.Id)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(required, used.ToArray());
+    }
+
+    [Fact]
     public void Ids_are_unique_well_formed_and_ordered()
     {
         Assert.Equal(_catalog.Entries.Count, _catalog.Entries.Select(e => e.Id).Distinct().Count());

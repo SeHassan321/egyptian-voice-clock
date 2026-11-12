@@ -26,7 +26,10 @@ public sealed class TimeSpeechPlan
         FullPhraseAssetId = AssetIds.FullPhrase(hour12, time.Minute);
     }
 
-    /// <summary>The interpreted time, truncated to the minute.</summary>
+    /// <summary>
+    /// The time that is spoken: the requested time truncated to the minute, or rounded to the
+    /// nearest five minutes when that setting is on.
+    /// </summary>
     public TimeOnly Time { get; }
 
     /// <summary>The hour as a 12-hour clock shows it (1–12).</summary>

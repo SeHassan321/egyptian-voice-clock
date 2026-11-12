@@ -29,6 +29,9 @@ public enum AssetRequirement
     Required,
     RequiredWhenDayPeriodEnabled,
     Optional,
+
+    /// <summary>Exact minutes: never spoken when the clock rounds to the nearest five minutes.</summary>
+    RequiredUnlessRounding,
 }
 
 /// <summary>One recording the owner can make.</summary>
@@ -39,10 +42,11 @@ public enum AssetRequirement
 /// <param name="Order">Position in the guided recording sequence.</param>
 public sealed record CatalogEntry(string Id, AssetCategory Category, string Text, AssetRequirement Requirement, int Order)
 {
-    public bool IsRequired(bool includeDayPeriod) => Requirement switch
+    public bool IsRequired(bool includeDayPeriod, bool roundToFiveMinutes = false) => Requirement switch
     {
         AssetRequirement.Required => true,
         AssetRequirement.RequiredWhenDayPeriodEnabled => includeDayPeriod,
+        AssetRequirement.RequiredUnlessRounding => !roundToFiveMinutes,
         _ => false,
     };
 }
@@ -77,7 +81,7 @@ public sealed class RecordingCatalog
 
         foreach (var rule in rules.Minutes.Where(m => !m.IsRound))
         {
-            entries.Add(new CatalogEntry(AssetIds.Minute(rule.Minute), AssetCategory.ExactMinute, rule.Text, AssetRequirement.Required, entries.Count));
+            entries.Add(new CatalogEntry(AssetIds.Minute(rule.Minute), AssetCategory.ExactMinute, rule.Text, AssetRequirement.RequiredUnlessRounding, entries.Count));
         }
 
         entries.Add(new CatalogEntry(AssetIds.DayPeriodAm, AssetCategory.DayPeriod, rules.AmText, AssetRequirement.RequiredWhenDayPeriodEnabled, entries.Count));
@@ -94,7 +98,8 @@ public sealed class RecordingCatalog
     /// <summary>All standard clips in guided recording order (full-phrase overrides are not listed).</summary>
     public IReadOnlyList<CatalogEntry> Entries { get; }
 
-    public IEnumerable<CatalogEntry> RequiredEntries(bool includeDayPeriod) => Entries.Where(e => e.IsRequired(includeDayPeriod));
+    public IEnumerable<CatalogEntry> RequiredEntries(bool includeDayPeriod, bool roundToFiveMinutes = false) =>
+        Entries.Where(e => e.IsRequired(includeDayPeriod, roundToFiveMinutes));
 
     /// <summary>Finds a standard clip or a full-phrase override; null for anything unknown.</summary>
     public CatalogEntry? Find(string? id)

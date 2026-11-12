@@ -196,6 +196,7 @@ public sealed class JsonSettingsRepository : ISettingsRepository
             return new AppSettings
             {
                 IncludeDayPeriod = document.IncludeDayPeriod ?? defaults.IncludeDayPeriod,
+                RoundToFiveMinutes = document.RoundToFiveMinutes ?? defaults.RoundToFiveMinutes,
                 SegmentGapMs = document.SegmentGapMs ?? defaults.SegmentGapMs,
                 NormalizeLoudness = document.NormalizeLoudness ?? defaults.NormalizeLoudness,
                 UseFullPhraseOverrides = document.UseFullPhraseOverrides ?? defaults.UseFullPhraseOverrides,
@@ -236,6 +237,7 @@ public sealed class JsonSettingsRepository : ISettingsRepository
         {
             SchemaVersion = AppSettings.CurrentSchemaVersion,
             IncludeDayPeriod = settings.IncludeDayPeriod,
+            RoundToFiveMinutes = settings.RoundToFiveMinutes,
             SegmentGapMs = settings.SegmentGapMs,
             NormalizeLoudness = settings.NormalizeLoudness,
             UseFullPhraseOverrides = settings.UseFullPhraseOverrides,
@@ -252,6 +254,9 @@ internal sealed class AppSettingsDocument
     public int SchemaVersion { get; set; }
 
     public bool? IncludeDayPeriod { get; set; }
+
+    /// <summary>Added in 1.2; absent in older files, which therefore keep exact minutes.</summary>
+    public bool? RoundToFiveMinutes { get; set; }
 
     public int? SegmentGapMs { get; set; }
 

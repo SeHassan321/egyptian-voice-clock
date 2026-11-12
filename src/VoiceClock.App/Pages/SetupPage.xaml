@@ -66,6 +66,12 @@
             <!-- Options -->
             <Label Text="{x:Static res:Strings.Setup_Section_Options}" Style="{StaticResource SectionTitle}" />
             <Grid ColumnDefinitions="*,Auto">
+                <Label Text="{x:Static res:Strings.Setup_RoundTime}" VerticalOptions="Center" />
+                <Switch Grid.Column="1" IsToggled="{Binding RoundToFiveMinutes}"
+                        SemanticProperties.Description="{x:Static res:Strings.Setup_RoundTime}" />
+            </Grid>
+            <Label Text="{Binding RoundTimeHint}" Style="{StaticResource Hint}" />
+            <Grid ColumnDefinitions="*,Auto">
                 <Label Text="{x:Static res:Strings.Setup_IncludeDayPeriod}" VerticalOptions="Center" />
                 <Switch Grid.Column="1" IsToggled="{Binding IncludeDayPeriod}" />
             </Grid>

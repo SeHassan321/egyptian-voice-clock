@@ -114,6 +114,55 @@ public class AnnouncementServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task With_rounding_on_3_44_is_spoken_as_four_minus_a_quarter()
+    {
+        await _rig.RecordAsync("hour.04", "minute.45");
+        await _rig.UpdateSettingsAsync(s => s with { RoundToFiveMinutes = true });
+        _rig.Clock.Time = new TimeOnly(15, 44);
+
+        var result = await _rig.Announcer.AnnounceNowAsync();
+
+        Assert.Equal(AnnouncementStatus.Played, result.Status);
+        Assert.Equal("الساعة أربعة إلا ربع", result.SpokenText);
+        Assert.Equal(new[] { "hour.04", "minute.45" }, result.Segments.Select(s => s.AssetId).ToArray());
+    }
+
+    [Fact]
+    public async Task Without_rounding_3_44_is_spoken_exactly()
+    {
+        await _rig.RecordAsync("hour.03", "minute.44", "hour.04", "minute.45");
+        _rig.Clock.Time = new TimeOnly(15, 44);
+
+        var result = await _rig.Announcer.AnnounceNowAsync();
+
+        Assert.Equal("الساعة تلاتة وأربعة وأربعين دقيقة", result.SpokenText);
+    }
+
+    [Fact]
+    public async Task Rounding_can_be_bypassed_for_one_request()
+    {
+        await _rig.RecordAsync("hour.03", "minute.44");
+        await _rig.UpdateSettingsAsync(s => s with { RoundToFiveMinutes = true });
+
+        var result = await _rig.Announcer.AnnounceAsync(new TimeOnly(3, 44), new AnnouncementOverrides(RoundToFiveMinutes: false));
+
+        Assert.Equal(AnnouncementStatus.Played, result.Status);
+        Assert.Equal("الساعة تلاتة وأربعة وأربعين دقيقة", result.SpokenText);
+    }
+
+    [Fact]
+    public async Task With_rounding_a_full_sentence_for_the_rounded_time_is_used()
+    {
+        await _rig.RecordAsync("phrase.03.45");
+        await _rig.UpdateSettingsAsync(s => s with { RoundToFiveMinutes = true });
+
+        var result = await _rig.Announcer.AnnounceAsync(new TimeOnly(15, 46));
+
+        Assert.Equal(AnnouncementStatus.Played, result.Status);
+        Assert.Equal(new[] { "phrase.03.45" }, result.Segments.Select(s => s.AssetId).ToArray());
+    }
+
+    [Fact]
     public async Task Full_sentence_is_followed_by_the_day_period_when_enabled()
     {
         await _rig.RecordAsync("phrase.01.43", "period.pm");

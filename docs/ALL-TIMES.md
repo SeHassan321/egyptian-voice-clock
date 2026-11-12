@@ -4,6 +4,8 @@
 
 All 720 minutes of the 12-hour cycle. Morning and evening are spoken identically unless
 «صباحًا / مساءً» is turned on in settings, in which case that word is added at the end.
+With «قرّب الوقت لأقرب 5 دقايق» on, each time is said like the nearest multiple of five
+minutes (3:44 like 3:45); see [TIME-RULES.md](TIME-RULES.md).
 
 ## 1:00 – 1:59
 

@@ -21,6 +21,8 @@ static string AllTimes(TimeSpeechEngine engine)
     sb.AppendLine();
     sb.AppendLine("All 720 minutes of the 12-hour cycle. Morning and evening are spoken identically unless");
     sb.AppendLine("«صباحًا / مساءً» is turned on in settings, in which case that word is added at the end.");
+    sb.AppendLine("With «قرّب الوقت لأقرب 5 دقايق» on, each time is said like the nearest multiple of five");
+    sb.AppendLine("minutes (3:44 like 3:45); see [TIME-RULES.md](TIME-RULES.md).");
     sb.AppendLine();
 
     for (var hour12 = 1; hour12 <= 12; hour12++)
@@ -54,6 +56,7 @@ static string Catalog(RecordingCatalog catalog)
     sb.AppendLine("default voice. Say the text exactly as written, in one breath, with a natural tone.");
     sb.AppendLine();
     sb.AppendLine(CultureInfo.InvariantCulture, $"- Required clips: **{catalog.RequiredEntries(false).Count()}** (plus **2** more when «صباحًا / مساءً» is on)");
+    sb.AppendLine(CultureInfo.InvariantCulture, $"- With «قرّب الوقت لأقرب 5 دقايق» on, only **{catalog.RequiredEntries(false, roundToFiveMinutes: true).Count()}** are required: exact minutes are never said");
     sb.AppendLine(CultureInfo.InvariantCulture, $"- Optional: the spoken error message, and complete-sentence overrides for any of the 720 times (`phrase.HH.MM`)");
     sb.AppendLine();
 
@@ -69,6 +72,7 @@ static string Catalog(RecordingCatalog catalog)
             {
                 AssetRequirement.Required => "yes",
                 AssetRequirement.RequiredWhenDayPeriodEnabled => "when صباحًا/مساءً is on",
+                AssetRequirement.RequiredUnlessRounding => "yes, unless rounding is on",
                 _ => "optional",
             };
             sb.AppendLine(CultureInfo.InvariantCulture, $"| {entry.Order + 1} | `{entry.Id}` | {entry.Text} | {required} |");

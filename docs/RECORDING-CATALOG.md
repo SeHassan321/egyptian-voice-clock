@@ -7,6 +7,7 @@ Each clip is stored as `voice/user/<id>.wav` (own recording) or comes from the b
 default voice. Say the text exactly as written, in one breath, with a natural tone.
 
 - Required clips: **71** (plus **2** more when «صباحًا / مساءً» is on)
+- With «قرّب الوقت لأقرب 5 دقايق» on, only **23** are required: exact minutes are never said
 - Optional: the spoken error message, and complete-sentence overrides for any of the 720 times (`phrase.HH.MM`)
 
 ## Hours (الساعات)
@@ -46,54 +47,54 @@ default voice. Say the text exactly as written, in one breath, with a natural to
 
 | # | Id | Say | Required |
 |---|---|---|---|
-| 24 | `minute.01` | ودقيقة | yes |
-| 25 | `minute.02` | ودقيقتين | yes |
-| 26 | `minute.03` | وتلات دقايق | yes |
-| 27 | `minute.04` | وأربع دقايق | yes |
-| 28 | `minute.06` | وست دقايق | yes |
-| 29 | `minute.07` | وسبع دقايق | yes |
-| 30 | `minute.08` | وتمن دقايق | yes |
-| 31 | `minute.09` | وتسع دقايق | yes |
-| 32 | `minute.11` | وحداشر دقيقة | yes |
-| 33 | `minute.12` | واتناشر دقيقة | yes |
-| 34 | `minute.13` | وتلتاشر دقيقة | yes |
-| 35 | `minute.14` | وأربعتاشر دقيقة | yes |
-| 36 | `minute.16` | وستاشر دقيقة | yes |
-| 37 | `minute.17` | وسبعتاشر دقيقة | yes |
-| 38 | `minute.18` | وتمنتاشر دقيقة | yes |
-| 39 | `minute.19` | وتسعتاشر دقيقة | yes |
-| 40 | `minute.21` | وواحد وعشرين دقيقة | yes |
-| 41 | `minute.22` | واتنين وعشرين دقيقة | yes |
-| 42 | `minute.23` | وتلاتة وعشرين دقيقة | yes |
-| 43 | `minute.24` | وأربعة وعشرين دقيقة | yes |
-| 44 | `minute.26` | وستة وعشرين دقيقة | yes |
-| 45 | `minute.27` | وسبعة وعشرين دقيقة | yes |
-| 46 | `minute.28` | وتمانية وعشرين دقيقة | yes |
-| 47 | `minute.29` | وتسعة وعشرين دقيقة | yes |
-| 48 | `minute.31` | وواحد وتلاتين دقيقة | yes |
-| 49 | `minute.32` | واتنين وتلاتين دقيقة | yes |
-| 50 | `minute.33` | وتلاتة وتلاتين دقيقة | yes |
-| 51 | `minute.34` | وأربعة وتلاتين دقيقة | yes |
-| 52 | `minute.36` | وستة وتلاتين دقيقة | yes |
-| 53 | `minute.37` | وسبعة وتلاتين دقيقة | yes |
-| 54 | `minute.38` | وتمانية وتلاتين دقيقة | yes |
-| 55 | `minute.39` | وتسعة وتلاتين دقيقة | yes |
-| 56 | `minute.41` | وواحد وأربعين دقيقة | yes |
-| 57 | `minute.42` | واتنين وأربعين دقيقة | yes |
-| 58 | `minute.43` | وتلاتة وأربعين دقيقة | yes |
-| 59 | `minute.44` | وأربعة وأربعين دقيقة | yes |
-| 60 | `minute.46` | وستة وأربعين دقيقة | yes |
-| 61 | `minute.47` | وسبعة وأربعين دقيقة | yes |
-| 62 | `minute.48` | وتمانية وأربعين دقيقة | yes |
-| 63 | `minute.49` | وتسعة وأربعين دقيقة | yes |
-| 64 | `minute.51` | وواحد وخمسين دقيقة | yes |
-| 65 | `minute.52` | واتنين وخمسين دقيقة | yes |
-| 66 | `minute.53` | وتلاتة وخمسين دقيقة | yes |
-| 67 | `minute.54` | وأربعة وخمسين دقيقة | yes |
-| 68 | `minute.56` | وستة وخمسين دقيقة | yes |
-| 69 | `minute.57` | وسبعة وخمسين دقيقة | yes |
-| 70 | `minute.58` | وتمانية وخمسين دقيقة | yes |
-| 71 | `minute.59` | وتسعة وخمسين دقيقة | yes |
+| 24 | `minute.01` | ودقيقة | yes, unless rounding is on |
+| 25 | `minute.02` | ودقيقتين | yes, unless rounding is on |
+| 26 | `minute.03` | وتلات دقايق | yes, unless rounding is on |
+| 27 | `minute.04` | وأربع دقايق | yes, unless rounding is on |
+| 28 | `minute.06` | وست دقايق | yes, unless rounding is on |
+| 29 | `minute.07` | وسبع دقايق | yes, unless rounding is on |
+| 30 | `minute.08` | وتمن دقايق | yes, unless rounding is on |
+| 31 | `minute.09` | وتسع دقايق | yes, unless rounding is on |
+| 32 | `minute.11` | وحداشر دقيقة | yes, unless rounding is on |
+| 33 | `minute.12` | واتناشر دقيقة | yes, unless rounding is on |
+| 34 | `minute.13` | وتلتاشر دقيقة | yes, unless rounding is on |
+| 35 | `minute.14` | وأربعتاشر دقيقة | yes, unless rounding is on |
+| 36 | `minute.16` | وستاشر دقيقة | yes, unless rounding is on |
+| 37 | `minute.17` | وسبعتاشر دقيقة | yes, unless rounding is on |
+| 38 | `minute.18` | وتمنتاشر دقيقة | yes, unless rounding is on |
+| 39 | `minute.19` | وتسعتاشر دقيقة | yes, unless rounding is on |
+| 40 | `minute.21` | وواحد وعشرين دقيقة | yes, unless rounding is on |
+| 41 | `minute.22` | واتنين وعشرين دقيقة | yes, unless rounding is on |
+| 42 | `minute.23` | وتلاتة وعشرين دقيقة | yes, unless rounding is on |
+| 43 | `minute.24` | وأربعة وعشرين دقيقة | yes, unless rounding is on |
+| 44 | `minute.26` | وستة وعشرين دقيقة | yes, unless rounding is on |
+| 45 | `minute.27` | وسبعة وعشرين دقيقة | yes, unless rounding is on |
+| 46 | `minute.28` | وتمانية وعشرين دقيقة | yes, unless rounding is on |
+| 47 | `minute.29` | وتسعة وعشرين دقيقة | yes, unless rounding is on |
+| 48 | `minute.31` | وواحد وتلاتين دقيقة | yes, unless rounding is on |
+| 49 | `minute.32` | واتنين وتلاتين دقيقة | yes, unless rounding is on |
+| 50 | `minute.33` | وتلاتة وتلاتين دقيقة | yes, unless rounding is on |
+| 51 | `minute.34` | وأربعة وتلاتين دقيقة | yes, unless rounding is on |
+| 52 | `minute.36` | وستة وتلاتين دقيقة | yes, unless rounding is on |
+| 53 | `minute.37` | وسبعة وتلاتين دقيقة | yes, unless rounding is on |
+| 54 | `minute.38` | وتمانية وتلاتين دقيقة | yes, unless rounding is on |
+| 55 | `minute.39` | وتسعة وتلاتين دقيقة | yes, unless rounding is on |
+| 56 | `minute.41` | وواحد وأربعين دقيقة | yes, unless rounding is on |
+| 57 | `minute.42` | واتنين وأربعين دقيقة | yes, unless rounding is on |
+| 58 | `minute.43` | وتلاتة وأربعين دقيقة | yes, unless rounding is on |
+| 59 | `minute.44` | وأربعة وأربعين دقيقة | yes, unless rounding is on |
+| 60 | `minute.46` | وستة وأربعين دقيقة | yes, unless rounding is on |
+| 61 | `minute.47` | وسبعة وأربعين دقيقة | yes, unless rounding is on |
+| 62 | `minute.48` | وتمانية وأربعين دقيقة | yes, unless rounding is on |
+| 63 | `minute.49` | وتسعة وأربعين دقيقة | yes, unless rounding is on |
+| 64 | `minute.51` | وواحد وخمسين دقيقة | yes, unless rounding is on |
+| 65 | `minute.52` | واتنين وخمسين دقيقة | yes, unless rounding is on |
+| 66 | `minute.53` | وتلاتة وخمسين دقيقة | yes, unless rounding is on |
+| 67 | `minute.54` | وأربعة وخمسين دقيقة | yes, unless rounding is on |
+| 68 | `minute.56` | وستة وخمسين دقيقة | yes, unless rounding is on |
+| 69 | `minute.57` | وسبعة وخمسين دقيقة | yes, unless rounding is on |
+| 70 | `minute.58` | وتمانية وخمسين دقيقة | yes, unless rounding is on |
+| 71 | `minute.59` | وتسعة وخمسين دقيقة | yes, unless rounding is on |
 
 ## Day period (صباحًا ومساءً)
 

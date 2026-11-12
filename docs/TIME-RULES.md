@@ -7,8 +7,9 @@ sentences is in [ALL-TIMES.md](ALL-TIMES.md) (generated from the engine itself).
 
 - **The phone's local time** (Android `Calendar` in the device time zone), truncated to the minute.
   UTC is never used.
-- **Settings**: whether to add «صباحًا / مساءً» (off by default) and whether complete recorded
-  sentences may replace the composed words (on by default).
+- **Settings**: whether to add «صباحًا / مساءً» (off by default), whether to round to the nearest
+  five minutes (off by default, see below) and whether complete recorded sentences may replace the
+  composed words (on by default).
 
 ## The 12-hour clock
 
@@ -62,6 +63,30 @@ These replace the original draft wherever they differ:
    «الساعة اتناشر إلا تلت صباحًا» and midnight is «الساعة اتناشر صباحًا».
 4. **No automatic announcements** in this version; the time is spoken only when asked
    (main button, repeat button or home-screen widget).
+
+## Rounding to the nearest five minutes (optional, off by default)
+
+Settings → «قرّب الوقت لأقرب 5 دقايق». Requested by the owner (Hassan, November 2026): at 3:44 say
+«الساعة أربعة إلا ربع» instead of «الساعة تلاتة وأربعة وأربعين دقيقة».
+
+| Shown on the phone | Said with rounding on |
+|---|---|
+| 3:38 – 3:42 | الساعة أربعة إلا تلت |
+| 3:43 – 3:47 | الساعة أربعة إلا ربع |
+| 3:58 – 4:02 | الساعة أربعة |
+| 12:58 – 1:02 | الساعة واحدة |
+
+- One or two minutes past a multiple of five go back; three or four go forward. Seconds are
+  ignored, so the result always follows the minute shown on the phone. The spoken time is never
+  more than two minutes away from it.
+- The rounded time is then spoken with exactly the rules above, so rounding adds no new words.
+  صباحًا/مساءً also belongs to the rounded time: 11:58 is «الساعة اتناشر مساءً» (noon) and
+  23:58 is «الساعة اتناشر صباحًا» (midnight).
+- A complete recorded sentence for the rounded time is used if one exists (3:44 uses `phrase.03.45`).
+- Only the 12 hour clips and the 11 round-minute clips can be spoken, so while rounding is on the
+  48 exact-minute clips are not required: setup is complete with 23 clips instead of 71.
+- `TimeSpeechEngine.RoundToNearestFiveMinutes` does the rounding; it is tested for every minute
+  of the day in `TimeSpeechEngineTests`.
 
 ## Required acceptance examples
 

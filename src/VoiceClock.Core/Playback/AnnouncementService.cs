@@ -39,7 +39,7 @@ public sealed record AnnouncementResult(
 }
 
 /// <summary>Per-request changes, used by the setup screen's test tools.</summary>
-public sealed record AnnouncementOverrides(bool? UseFullPhrase = null, bool? IncludeDayPeriod = null);
+public sealed record AnnouncementOverrides(bool? UseFullPhrase = null, bool? IncludeDayPeriod = null, bool? RoundToFiveMinutes = null);
 
 public interface IAnnouncementService
 {
@@ -128,7 +128,9 @@ public sealed class AnnouncementService : IAnnouncementService
         {
             await _initializer.EnsureInitializedAsync(token).ConfigureAwait(false);
             var settings = _settings.Current;
-            plan = _engine.BuildPlan(time, new TimeSpeechSettings(overrides?.IncludeDayPeriod ?? settings.IncludeDayPeriod));
+            plan = _engine.BuildPlan(time, new TimeSpeechSettings(
+                overrides?.IncludeDayPeriod ?? settings.IncludeDayPeriod,
+                overrides?.RoundToFiveMinutes ?? settings.RoundToFiveMinutes));
             var useFullPhrase = overrides?.UseFullPhrase ?? settings.UseFullPhraseOverrides;
 
             var (resolved, clips) = await ResolveAndLoadAsync(plan, useFullPhrase, token).ConfigureAwait(false);

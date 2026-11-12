@@ -20,10 +20,14 @@ public interface ITimeSpeechEngine
 /// → next hour + "إلا …", wrapping 12 → 1.</item>
 /// <item>Every other minute → current hour + "و…".</item>
 /// <item>"صباحًا"/"مساءً" is appended when enabled, based on the real time (00:00–11:59 is morning).</item>
+/// <item>With <see cref="TimeSpeechSettings.RoundToFiveMinutes"/> the time is first rounded to the nearest
+/// five minutes (<see cref="RoundToNearestFiveMinutes"/>) and that time is spoken, day period included.</item>
 /// </list>
 /// </remarks>
 public sealed class TimeSpeechEngine : ITimeSpeechEngine
 {
+    private const int MinutesPerDay = 24 * 60;
+
     public TimeSpeechEngine(SpeechRules rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
@@ -35,6 +39,11 @@ public sealed class TimeSpeechEngine : ITimeSpeechEngine
     public TimeSpeechPlan BuildPlan(TimeOnly time, TimeSpeechSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
+
+        if (settings.RoundToFiveMinutes)
+        {
+            time = RoundToNearestFiveMinutes(time);
+        }
 
         var minute = time.Minute;
         var wholeMinute = new TimeOnly(time.Hour, minute);
@@ -72,6 +81,18 @@ public sealed class TimeSpeechEngine : ITimeSpeechEngine
             : null;
 
         return new TimeSpeechPlan(wholeMinute, hour12, spokenHour, relation, period, timeSegments.AsReadOnly(), periodSegment);
+    }
+
+    /// <summary>
+    /// The minute shown on the phone, moved to the nearest multiple of five: one or two minutes past
+    /// go back, three or four go forward (3:42 → 3:40, 3:43 → 3:45, 3:58 → 4:00, 23:58 → 00:00).
+    /// Seconds are ignored, as everywhere else, so the result never depends on what the screen does not show.
+    /// </summary>
+    public static TimeOnly RoundToNearestFiveMinutes(TimeOnly time)
+    {
+        var minuteOfDay = (time.Hour * 60) + time.Minute;
+        var rounded = ((minuteOfDay + 2) / 5 * 5) % MinutesPerDay;
+        return new TimeOnly(rounded / 60, rounded % 60);
     }
 
     /// <summary>0 and 12 → 12, 13 → 1, … 23 → 11.</summary>

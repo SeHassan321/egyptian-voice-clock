@@ -179,6 +179,25 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         set => UpdateSettings(_current with { IncludeDayPeriod = value });
     }
 
+    /// <summary>Say the nearest five minutes instead of the exact minute.</summary>
+    public bool RoundToFiveMinutes
+    {
+        get => _current.RoundToFiveMinutes;
+        set => UpdateSettings(_current with { RoundToFiveMinutes = value });
+    }
+
+    /// <summary>Explains rounding with real sentences from the speech rules, so it never goes out of date.</summary>
+    public string RoundTimeHint
+    {
+        get
+        {
+            var example = new TimeOnly(3, 44);
+            var exact = _engine.BuildPlan(example, TimeSpeechSettings.Default).TimeText;
+            var rounded = _engine.BuildPlan(example, new TimeSpeechSettings(RoundToFiveMinutes: true)).TimeText;
+            return Texts.Format(Strings.Setup_RoundTime_Hint, Texts.Clock(example), rounded, exact);
+        }
+    }
+
     public bool NormalizeLoudness
     {
         get => _current.NormalizeLoudness;
@@ -264,9 +283,9 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>Exactly what will be said for the selected test time.</summary>
+    /// <summary>Exactly what will be said for the selected test time (rounded too, when that is on).</summary>
     public string TestPreviewText =>
-        Texts.Format(Strings.Setup_WillSay, _engine.BuildPlan(SelectedTestTime, new TimeSpeechSettings(_current.IncludeDayPeriod)).Text);
+        Texts.Format(Strings.Setup_WillSay, _engine.BuildPlan(SelectedTestTime, _current.ToSpeechSettings()).Text);
 
     public async Task OnAppearingAsync()
     {
@@ -304,7 +323,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var summary = SetupStatusCalculator.Compute(_catalog, _repository, _engine, _current.IncludeDayPeriod);
+        var summary = SetupStatusCalculator.Compute(_catalog, _repository, _engine, _current.IncludeDayPeriod, _current.RoundToFiveMinutes);
         SummaryText = Texts.Format(Strings.Setup_Summary, summary.ReadyCount, summary.RequiredCount);
         IsComplete = summary.IsComplete;
         CompletionText = summary.IsComplete ? Strings.Setup_Complete : Strings.Setup_Incomplete;
@@ -362,7 +381,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
 
     private async Task RecordNextMissingAsync()
     {
-        var next = _catalog.RequiredEntries(_current.IncludeDayPeriod)
+        var next = _catalog.RequiredEntries(_current.IncludeDayPeriod, _current.RoundToFiveMinutes)
             .FirstOrDefault(e => !_repository.IsAvailable(e.Id));
         if (next is null)
         {
@@ -534,6 +553,7 @@ public sealed class SetupViewModel : ObservableObject, IDisposable
     private void RaiseSettingsProperties()
     {
         OnPropertyChanged(nameof(IncludeDayPeriod));
+        OnPropertyChanged(nameof(RoundToFiveMinutes));
         OnPropertyChanged(nameof(NormalizeLoudness));
         OnPropertyChanged(nameof(UseFullPhraseOverrides));
         OnPropertyChanged(nameof(PlayErrorFeedback));
