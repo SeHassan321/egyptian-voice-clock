@@ -112,6 +112,41 @@ public class SetupValidationTests : IDisposable
     }
 
     [Fact]
+    public async Task With_rounding_the_hours_and_round_minutes_alone_cover_all_720_times()
+    {
+        await _rig.RecordAsync(TestCatalog.Catalog.RequiredEntries(includeDayPeriod: false, roundToFiveMinutes: true).Select(e => e.Id).ToArray());
+        await _rig.Repository.InitializeAsync();
+
+        var rounded = CoverageValidator.Validate(TestCatalog.Engine, _rig.Repository.IsAvailable, includeDayPeriod: false, roundToFiveMinutes: true);
+        var exact = CoverageValidator.Validate(TestCatalog.Engine, _rig.Repository.IsAvailable, includeDayPeriod: false);
+
+        Assert.True(rounded.IsComplete);
+        Assert.Equal(720, rounded.TimesChecked);
+        Assert.False(exact.IsComplete);
+        Assert.Equal(12 * 48, exact.Uncovered.Count);
+        Assert.Equal(48, exact.MissingAssetIds.Count);
+
+        var summary = SetupStatusCalculator.Compute(TestCatalog.Catalog, _rig.Repository, TestCatalog.Engine, includeDayPeriod: false, roundToFiveMinutes: true);
+        Assert.True(summary.IsComplete);
+        Assert.Equal(23, summary.RequiredCount);
+        Assert.Equal(1.0, summary.Progress);
+    }
+
+    [Fact]
+    public async Task With_rounding_a_missing_round_minute_is_still_reported()
+    {
+        await _rig.RecordAsync(TestCatalog.Catalog.RequiredEntries(includeDayPeriod: false, roundToFiveMinutes: true)
+            .Select(e => e.Id).Where(id => id != "minute.45").ToArray());
+
+        var summary = SetupStatusCalculator.Compute(TestCatalog.Catalog, _rig.Repository, TestCatalog.Engine, includeDayPeriod: false, roundToFiveMinutes: true);
+
+        Assert.False(summary.IsComplete);
+        Assert.Equal(new[] { "minute.45" }, summary.MissingIds.ToArray());
+        // 43, 44, 45, 46 and 47 minutes past each of the 12 hours are all said as «إلا ربع».
+        Assert.Equal(12 * 5, summary.Coverage.Uncovered.Count);
+    }
+
+    [Fact]
     public async Task A_damaged_clip_makes_setup_incomplete()
     {
         await _rig.RecordAllRequiredAsync();

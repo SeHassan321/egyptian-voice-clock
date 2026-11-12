@@ -41,6 +41,8 @@
   <data name="Setup_WillSay" xml:space="preserve"><value>هيقول: {0}</value></data>
   <data name="Setup_Section_Options" xml:space="preserve"><value>اختيارات</value></data>
   <data name="Setup_IncludeDayPeriod" xml:space="preserve"><value>قول «صباحًا» و«مساءً»</value></data>
+  <data name="Setup_RoundTime" xml:space="preserve"><value>قرّب الوقت لأقرب 5 دقايق</value></data>
+  <data name="Setup_RoundTime_Hint" xml:space="preserve"><value>مثلًا {0} هتتقال «{1}» بدل «{2}». ولما يكون شغّال، تسجيلات «باقي الدقايق» مش مطلوبة.</value></data>
   <data name="Setup_SegmentGap" xml:space="preserve"><value>المسافة بين الكلمات: {0} مللي ثانية</value></data>
   <data name="Setup_NormalizeLoudness" xml:space="preserve"><value>ساوي علو الصوت بين التسجيلات</value></data>
   <data name="Setup_UseFullPhrases" xml:space="preserve"><value>استخدم الجمل الكاملة لو متسجّلة</value></data>

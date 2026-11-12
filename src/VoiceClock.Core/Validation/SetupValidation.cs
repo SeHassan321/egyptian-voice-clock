@@ -25,12 +25,21 @@ public static class CoverageValidator
     /// False (the default for completeness) requires the reusable segments alone to cover every time,
     /// so optional complete sentences never hide a missing word.
     /// </param>
-    public static CoverageReport Validate(ITimeSpeechEngine engine, Func<string, bool> isAvailable, bool includeDayPeriod, bool useFullPhraseOverrides = false)
+    /// <param name="roundToFiveMinutes">
+    /// Check what the clock says when it rounds to five minutes: every minute is still checked,
+    /// through the same rounding the announcements use.
+    /// </param>
+    public static CoverageReport Validate(
+        ITimeSpeechEngine engine,
+        Func<string, bool> isAvailable,
+        bool includeDayPeriod,
+        bool useFullPhraseOverrides = false,
+        bool roundToFiveMinutes = false)
     {
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(isAvailable);
 
-        var settings = new TimeSpeechSettings(includeDayPeriod);
+        var settings = new TimeSpeechSettings(includeDayPeriod, roundToFiveMinutes);
         var hours = includeDayPeriod ? 24 : 12;
         var uncovered = new List<UncoveredTime>();
         var missing = new SortedSet<string>(StringComparer.Ordinal);
@@ -74,13 +83,18 @@ public sealed record SetupSummary(
 
 public static class SetupStatusCalculator
 {
-    public static SetupSummary Compute(RecordingCatalog catalog, IVoiceAssetRepository repository, ITimeSpeechEngine engine, bool includeDayPeriod)
+    public static SetupSummary Compute(
+        RecordingCatalog catalog,
+        IVoiceAssetRepository repository,
+        ITimeSpeechEngine engine,
+        bool includeDayPeriod,
+        bool roundToFiveMinutes = false)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(engine);
 
-        var required = catalog.RequiredEntries(includeDayPeriod).ToList();
+        var required = catalog.RequiredEntries(includeDayPeriod, roundToFiveMinutes).ToList();
         var missing = new List<string>();
         var invalid = new List<string>();
         var ready = 0;
@@ -101,7 +115,7 @@ public static class SetupStatusCalculator
             }
         }
 
-        var coverage = CoverageValidator.Validate(engine, repository.IsAvailable, includeDayPeriod);
+        var coverage = CoverageValidator.Validate(engine, repository.IsAvailable, includeDayPeriod, roundToFiveMinutes: roundToFiveMinutes);
         return new SetupSummary(required.Count, ready, missing, invalid, repository.AvailableFullPhraseIds.Count, coverage);
     }
 }

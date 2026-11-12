@@ -265,6 +265,10 @@ public sealed class RecordingsViewModel : ObservableObject, IDisposable
 
     private bool IncludeDayPeriod => _settings.Current.IncludeDayPeriod;
 
+    private bool RoundToFiveMinutes => _settings.Current.RoundToFiveMinutes;
+
+    private bool IsRequired(CatalogEntry entry) => entry.IsRequired(IncludeDayPeriod, RoundToFiveMinutes);
+
     private void Rebuild()
     {
         _items.Clear();
@@ -279,7 +283,7 @@ public sealed class RecordingsViewModel : ObservableObject, IDisposable
                 .Select(e => new ClipItemViewModel(
                     e,
                     _repository.GetStatus(e.Id),
-                    e.IsRequired(IncludeDayPeriod),
+                    IsRequired(e),
                     item => _navigation.OpenRecorderAsync(item.Id),
                     PlayAsync,
                     item => item.Status.HasBundledDefault ? RestoreDefaultAsync(item) : DeleteAsync(item),
@@ -313,7 +317,7 @@ public sealed class RecordingsViewModel : ObservableObject, IDisposable
 
         foreach (var item in ids.Count == 0 ? _items.Values : ids.Select(id => _items.GetValueOrDefault(id)).OfType<ClipItemViewModel>())
         {
-            item.Update(_repository.GetStatus(item.Id), item.Entry.IsRequired(IncludeDayPeriod));
+            item.Update(_repository.GetStatus(item.Id), IsRequired(item.Entry));
         }
 
         RaiseCommandStates();
@@ -351,7 +355,7 @@ public sealed class RecordingsViewModel : ObservableObject, IDisposable
 
     private async Task RecordNextMissingAsync()
     {
-        var next = _catalog.RequiredEntries(IncludeDayPeriod).FirstOrDefault(e => !_repository.IsAvailable(e.Id));
+        var next = _catalog.RequiredEntries(IncludeDayPeriod, RoundToFiveMinutes).FirstOrDefault(e => !_repository.IsAvailable(e.Id));
         if (next is null)
         {
             Message = Strings.Recordings_NothingMissing;

@@ -175,7 +175,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var summary = SetupStatusCalculator.Compute(_catalog, _repository, _engine, _settings.Current.IncludeDayPeriod);
+        var settings = _settings.Current;
+        var summary = SetupStatusCalculator.Compute(_catalog, _repository, _engine, settings.IncludeDayPeriod, settings.RoundToFiveMinutes);
         _setupMessage = summary.IsComplete
             ? string.Empty
             : Texts.Format(Strings.Main_Status_SetupIncomplete, Math.Max(1, summary.MissingCount + summary.InvalidCount));

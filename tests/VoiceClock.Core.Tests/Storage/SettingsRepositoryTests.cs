@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using VoiceClock.Core.Settings;
 using VoiceClock.Core.Storage;
 using VoiceClock.Core.Tests.TestSupport;
+using VoiceClock.Core.Time;
 
 namespace VoiceClock.Core.Tests.Storage;
 
@@ -46,6 +47,44 @@ public class SettingsRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task Rounding_is_off_at_first_and_once_turned_on_survives_a_restart()
+    {
+        var repo = NewRepository();
+        Assert.False((await repo.LoadAsync()).Settings.RoundToFiveMinutes);
+
+        await repo.SaveAsync(repo.Current with { RoundToFiveMinutes = true });
+
+        var reloaded = await NewRepository().LoadAsync();
+        Assert.Equal(SettingsLoadOutcome.Loaded, reloaded.Outcome);
+        Assert.True(reloaded.Settings.RoundToFiveMinutes);
+        Assert.True(JsonNode.Parse(await File.ReadAllTextAsync(_locations.SettingsPath))!["roundToFiveMinutes"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public async Task Settings_saved_before_rounding_existed_keep_their_values_and_exact_minutes()
+    {
+        // What version 1.1 wrote: no "roundToFiveMinutes" at all.
+        await File.WriteAllTextAsync(_locations.SettingsPath, "{\"schemaVersion\": 1, \"includeDayPeriod\": true, \"segmentGapMs\": 90}");
+
+        var result = await NewRepository().LoadAsync();
+
+        Assert.Equal(SettingsLoadOutcome.Loaded, result.Outcome);
+        Assert.False(result.Settings.RoundToFiveMinutes);
+        Assert.True(result.Settings.IncludeDayPeriod);
+        Assert.Equal(90, result.Settings.SegmentGapMs);
+    }
+
+    [Fact]
+    public void Speech_settings_carry_the_day_period_and_rounding_choices()
+    {
+        var settings = new AppSettings { IncludeDayPeriod = true, RoundToFiveMinutes = true }.ToSpeechSettings();
+
+        Assert.True(settings.IncludeDayPeriod);
+        Assert.True(settings.RoundToFiveMinutes);
+        Assert.Equal(TimeSpeechSettings.Default, AppSettings.Default.ToSpeechSettings());
+    }
+
+    [Fact]
     public async Task Saving_raises_changed_with_sanitized_values()
     {
         var repo = NewRepository();
@@ -62,6 +101,7 @@ public class SettingsRepositoryTests : IDisposable
     [InlineData("{ broken json")]
     [InlineData("[]")]
     [InlineData("{\"schemaVersion\": 1, \"includeDayPeriod\": \"yes\"}")]
+    [InlineData("{\"schemaVersion\": 1, \"roundToFiveMinutes\": 1}")]
     [InlineData("{\"schemaVersion\": \"one\"}")]
     [InlineData("")]
     public async Task Damaged_settings_are_kept_aside_and_defaults_restored(string content)

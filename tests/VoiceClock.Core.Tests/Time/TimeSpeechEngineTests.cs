@@ -11,6 +11,9 @@ public class TimeSpeechEngineTests
     private string Say(int hour24, int minute, bool includeDayPeriod = false) =>
         _engine.BuildPlan(new TimeOnly(hour24, minute), new TimeSpeechSettings(includeDayPeriod)).Text;
 
+    private string SayRounded(int hour24, int minute) =>
+        _engine.BuildPlan(new TimeOnly(hour24, minute), new TimeSpeechSettings(RoundToFiveMinutes: true)).Text;
+
     // The acceptance examples from the project brief (12-hour times, checked in both halves of the day).
     [Theory]
     [InlineData(1, 0, "الساعة واحدة")]
@@ -238,5 +241,105 @@ public class TimeSpeechEngineTests
     public void Hour_conversion_to_12_hour_clock(int hour24, int expected)
     {
         Assert.Equal(expected, TimeSpeechEngine.ToHour12(hour24));
+    }
+
+    // The owner's request (November 2026): with rounding on, 3:44 is «أربعة إلا ربع»,
+    // not «تلاتة وأربعة وأربعين دقيقة». One or two minutes past go back, three or four go forward.
+    [Theory]
+    [InlineData(3, 44, "الساعة أربعة إلا ربع")]
+    [InlineData(3, 43, "الساعة أربعة إلا ربع")]
+    [InlineData(3, 42, "الساعة أربعة إلا تلت")]
+    [InlineData(3, 41, "الساعة أربعة إلا تلت")]
+    [InlineData(3, 47, "الساعة أربعة إلا ربع")]
+    [InlineData(3, 48, "الساعة أربعة إلا عشرة")]
+    [InlineData(1, 1, "الساعة واحدة")]
+    [InlineData(1, 2, "الساعة واحدة")]
+    [InlineData(1, 3, "الساعة واحدة وخمسة")]
+    [InlineData(1, 13, "الساعة واحدة وربع")]
+    [InlineData(1, 24, "الساعة واحدة ونص إلا خمسة")]
+    [InlineData(1, 28, "الساعة واحدة ونص")]
+    [InlineData(1, 33, "الساعة واحدة ونص وخمسة")]
+    [InlineData(1, 57, "الساعة اتنين إلا خمسة")]
+    [InlineData(1, 58, "الساعة اتنين")]
+    [InlineData(12, 58, "الساعة واحدة")]
+    [InlineData(11, 58, "الساعة اتناشر")]
+    public void Rounding_says_the_nearest_five_minutes(int hour12, int minute, string expected)
+    {
+        Assert.Equal(expected, SayRounded(hour12 % 12, minute));
+        Assert.Equal(expected, SayRounded((hour12 % 12) + 12, minute));
+    }
+
+    [Fact]
+    public void Rounding_is_off_by_default_and_then_the_exact_minute_is_said()
+    {
+        Assert.False(TimeSpeechSettings.Default.RoundToFiveMinutes);
+        Assert.Equal("الساعة تلاتة وأربعة وأربعين دقيقة", Say(15, 44));
+    }
+
+    [Fact]
+    public void With_rounding_every_minute_of_the_day_becomes_the_nearest_multiple_of_five()
+    {
+        var settings = new TimeSpeechSettings(RoundToFiveMinutes: true);
+        for (var minuteOfDay = 0; minuteOfDay < 1440; minuteOfDay++)
+        {
+            var plan = _engine.BuildPlan(new TimeOnly(minuteOfDay / 60, minuteOfDay % 60), settings);
+
+            // Expected shift worked out independently: 1–2 minutes past go back, 3–4 go forward.
+            var past = minuteOfDay % 5;
+            var expectedShift = past >= 3 ? 5 - past : -past;
+            var spokenMinuteOfDay = (plan.Time.Hour * 60) + plan.Time.Minute;
+            var shift = (spokenMinuteOfDay - minuteOfDay + 1440) % 1440;
+            shift = shift > 720 ? shift - 1440 : shift;
+
+            Assert.Equal(0, plan.Time.Minute % 5);
+            Assert.Equal(expectedShift, shift);
+
+            // Exactly the sentence of the rounded time, so rounding adds no new wording.
+            var exact = _engine.BuildPlan(plan.Time, TimeSpeechSettings.Default);
+            Assert.Equal(exact.Segments, plan.Segments);
+        }
+    }
+
+    [Fact]
+    public void Rounding_across_midnight_and_noon_keeps_the_right_day_period()
+    {
+        var settings = new TimeSpeechSettings(IncludeDayPeriod: true, RoundToFiveMinutes: true);
+
+        var almostMidnight = _engine.BuildPlan(new TimeOnly(23, 58), settings);
+        var almostNoon = _engine.BuildPlan(new TimeOnly(11, 58), settings);
+
+        Assert.Equal(new TimeOnly(0, 0), almostMidnight.Time);
+        Assert.Equal("الساعة اتناشر صباحًا", almostMidnight.Text);
+        Assert.Equal(new TimeOnly(12, 0), almostNoon.Time);
+        Assert.Equal("الساعة اتناشر مساءً", almostNoon.Text);
+    }
+
+    [Theory]
+    [InlineData(3, 42, 29, 3, 40)]
+    [InlineData(3, 42, 59, 3, 40)]
+    [InlineData(3, 43, 0, 3, 45)]
+    [InlineData(3, 45, 0, 3, 45)]
+    [InlineData(0, 0, 0, 0, 0)]
+    [InlineData(0, 2, 59, 0, 0)]
+    [InlineData(23, 57, 59, 23, 55)]
+    [InlineData(23, 58, 0, 0, 0)]
+    [InlineData(23, 59, 59, 0, 0)]
+    public void Rounding_uses_the_minute_on_the_screen_and_ignores_seconds(int hour, int minute, int second, int expectedHour, int expectedMinute)
+    {
+        var rounded = TimeSpeechEngine.RoundToNearestFiveMinutes(new TimeOnly(hour, minute, second));
+        Assert.Equal(new TimeOnly(expectedHour, expectedMinute), rounded);
+    }
+
+    [Fact]
+    public void With_rounding_the_plan_describes_the_rounded_time()
+    {
+        var plan = _engine.BuildPlan(new TimeOnly(15, 44), new TimeSpeechSettings(RoundToFiveMinutes: true));
+
+        Assert.Equal(new TimeOnly(15, 45), plan.Time);
+        Assert.Equal(3, plan.Hour12);
+        Assert.Equal(4, plan.SpokenHour);
+        Assert.Equal(MinuteRelation.ToNextHour, plan.Relation);
+        Assert.Equal("phrase.03.45", plan.FullPhraseAssetId);
+        Assert.Equal(new[] { "hour.04", "minute.45" }, plan.Segments.Select(s => s.AssetId).ToArray());
     }
 }

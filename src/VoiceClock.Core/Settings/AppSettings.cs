@@ -1,3 +1,5 @@
+using VoiceClock.Core.Time;
+
 namespace VoiceClock.Core.Settings;
 
 /// <summary>
@@ -16,6 +18,9 @@ public sealed record AppSettings
     /// <summary>Say "صباحًا"/"مساءً" after the time. Off by default.</summary>
     public bool IncludeDayPeriod { get; init; }
 
+    /// <summary>Say the nearest five minutes (3:44 → "الساعة أربعة إلا ربع"). Off by default.</summary>
+    public bool RoundToFiveMinutes { get; init; }
+
     /// <summary>Extra pause between recorded pieces, in milliseconds.</summary>
     public int SegmentGapMs { get; init; } = DefaultSegmentGapMs;
 
@@ -32,4 +37,7 @@ public sealed record AppSettings
     {
         SegmentGapMs = Math.Clamp(SegmentGapMs, MinSegmentGapMs, MaxSegmentGapMs),
     };
+
+    /// <summary>The options that change what the clock says.</summary>
+    public TimeSpeechSettings ToSpeechSettings() => new(IncludeDayPeriod, RoundToFiveMinutes);
 }

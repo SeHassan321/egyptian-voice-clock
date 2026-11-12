@@ -297,9 +297,10 @@ public sealed class RecordClipViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // The sentence belongs to this exact time, so it is never rounded here.
         var result = await _announcer.AnnounceAsync(
             new TimeOnly(hour12 % 12, minute),
-            new AnnouncementOverrides(UseFullPhrase: false, IncludeDayPeriod: false));
+            new AnnouncementOverrides(UseFullPhrase: false, IncludeDayPeriod: false, RoundToFiveMinutes: false));
         if (result.Status == AnnouncementStatus.MissingRecordings)
         {
             Message = Strings.Main_Status_Missing;
@@ -333,11 +334,12 @@ public sealed class RecordClipViewModel : ObservableObject, IDisposable
 
     private CatalogEntry? NextMissingAfter(CatalogEntry current)
     {
-        var includeDayPeriod = _settings.Current.IncludeDayPeriod;
+        var settings = _settings.Current;
         var index = IndexOf(current);
         return index < 0
             ? null
-            : _catalog.Entries.Skip(index + 1).FirstOrDefault(e => e.IsRequired(includeDayPeriod) && !_repository.IsAvailable(e.Id));
+            : _catalog.Entries.Skip(index + 1).FirstOrDefault(e =>
+                e.IsRequired(settings.IncludeDayPeriod, settings.RoundToFiveMinutes) && !_repository.IsAvailable(e.Id));
     }
 
     private int IndexOf(CatalogEntry entry)
@@ -361,8 +363,9 @@ public sealed class RecordClipViewModel : ObservableObject, IDisposable
         }
 
         var status = _repository.GetStatus(_entry.Id);
+        var settings = _settings.Current;
         SavedStatusText = status.IsReady || status.State == AssetState.Invalid
-            ? Texts.Status(status, _entry.IsRequired(_settings.Current.IncludeDayPeriod))
+            ? Texts.Status(status, _entry.IsRequired(settings.IncludeDayPeriod, settings.RoundToFiveMinutes))
             : Strings.Recorder_NotSaved;
         PlaySavedCommand.RaiseCanExecuteChanged();
     }

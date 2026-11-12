@@ -10,20 +10,20 @@ They test real logic, not just construction, without any Android tools:
 
 | Area | What is checked |
 |---|---|
-| Time engine | all 16 acceptance examples (morning and evening); the owner's exact-minute rules (1:24, 1:25, 1:43…); every one of the 1,440 minutes of a day against independently computed expectations; 720 distinct sentences per 12-hour cycle; 12 → 1 wrap; midnight and noon; صباحًا/مساءً placement; segment order; determinism; seconds ignored |
+| Time engine | all 16 acceptance examples (morning and evening); the owner's exact-minute rules (1:24, 1:25, 1:43…); every one of the 1,440 minutes of a day against independently computed expectations; 720 distinct sentences per 12-hour cycle; 12 → 1 wrap; midnight and noon; صباحًا/مساءً placement; segment order; determinism; seconds ignored; rounding to the nearest five minutes (3:44 → «أربعة إلا ربع», 1–2 minutes back and 3–4 forward for every minute of the day, across noon and midnight, seconds ignored, off by default) |
 | Phrase dictionary | all 12 hours and 59 minutes mapped; only 40/45/50/55 use «إلا»; round-minute wording; Egyptian counting forms; changing a word in data changes speech without code; malformed rules rejected with clear reasons |
-| Catalog | 74 clips, ids unique and well-formed; every clip any plan can need exists, and every required clip is actually used |
+| Catalog | 74 clips, ids unique and well-formed; every clip any plan can need exists, and every required clip is actually used; with rounding only the 23 hour and round-minute clips are required, and they are exactly the clips the plans use |
 | Audio | WAV read/write (including stereo, extra chunks, extensible format); truncated/foreign/empty files rejected; 80 Hz low-cut filter (25/50 Hz removed, voice band unchanged, DC removed); rumble before a word trimmed; soft hissing consonants kept at the start and end; isolated clicks ignored; silence trimming keeps every loud sample of the speech; fades; too short/long/silent/quiet/clipped detection; loudness normalization limits; gapless composition with exact gaps; resampling |
 | Playback completion | `StreamPlayer` against a simulated Android AudioTrack: typical phones, deep-buffer phones that hold back the last partial period, position reading 0 after stop (the cause of the false "playback failed" in builds 1–4), slow Bluetooth start, output that never starts or stops midway, write errors, focus loss while writing or draining, cancellation, audio shorter than the buffer, a position that never moves |
 | Shipped voice | the bundled `voicepack.zip` passes import validation, contains every required clip, covers all 1,440 minutes, and every prepared clip is clean speech without long leading/trailing silence |
 | Storage | persistence across restarts; manifest contents; atomic replace (interrupted write leaves the previous recording intact); unrelated clips untouched; deleting/restoring defaults; damaged files detected and the default used instead; corrupt or missing manifest rebuilt; externally deleted files; concurrent saves of different and of the same clip; recordings from older builds cleaned on load without touching the files; bundled voice re-prepared when the processing improves |
 | Bundled voice | extracted once per build; re-extracted when the build changes; broken pack reported without crashing |
 | Backup/restore | round trip; defaults not duplicated; rejection of non-zips, wrong format, future versions, missing manifest; path traversal, unknown ids, checksum mismatch, duplicates, silent audio and oversized (zip-bomb) entries skipped |
-| Settings | defaults; persistence; corruption kept aside and defaults restored; migration from unversioned files; newer files read but not overwritten; clamping |
-| Announcements | correct clips and order; missing recordings reported (never "success"); recorded error message only for missing recordings, beep for playback failures; full-sentence priority and fallback; duplicate requests ignored; cancellation; every player failure mapped to a non-success result; repeat replays identical audio; no speech while recording |
+| Settings | defaults; persistence; corruption kept aside and defaults restored; migration from unversioned files; newer files read but not overwritten; clamping; rounding off by default and kept across restarts; files written by 1.1 load with rounding off |
+| Announcements | correct clips and order; missing recordings reported (never "success"); recorded error message only for missing recordings, beep for playback failures; full-sentence priority and fallback; duplicate requests ignored; cancellation; every player failure mapped to a non-success result; repeat replays identical audio; no speech while recording; rounding (also with a full sentence for the rounded time) and turning it off for one request |
 | Recording | one session at a time; take trimming; unusable takes cannot be saved; microphone unavailable; cancel releases the microphone; replacing another clip while recording |
-| Coverage | all 720 (or 1,440 with صباحًا/مساءً) times checked; one missing minute leaves exactly 12 times uncovered; a missing hour leaves exactly 60; optional sentences never hide a missing word |
-| View models | big button, muted volume, setup messages, double taps, navigation, errors become friendly messages; setup progress and completion; backup/restore flows; recorder permission flows (denied, permanently denied → settings); guided "save then next missing" |
+| Coverage | all 720 (or 1,440 with صباحًا/مساءً) times checked; one missing minute leaves exactly 12 times uncovered; a missing hour leaves exactly 60; optional sentences never hide a missing word; with rounding the 23 clips cover all 720 times, and a missing «إلا ربع» leaves exactly 60 |
+| View models | big button, muted volume, setup messages, double taps, navigation, errors become friendly messages; setup progress and completion; backup/restore flows; recorder permission flows (denied, permanently denied → settings); guided "save then next missing"; rounding switch saved and reflected in the preview, the required count, the checklist and the guided recorder; comparing a full sentence is never rounded |
 
 ## Manual checklist on a phone
 
@@ -47,6 +47,8 @@ Use a real phone; emulators often have no usable microphone.
 - [ ] After the time is spoken, nothing else is heard and no error message appears (builds 1–4
       wrongly reported "مقدرتش أشغّل الصوت" here).
 - [ ] Repeat button replays the same sentence.
+- [ ] Turn on «قرّب الوقت لأقرب 5 دقايق»: «جرّب» at 3:44 previews and says «الساعة أربعة إلا ربع»,
+      3:42 says «الساعة أربعة إلا تلت», and the summary needs 23 clips. Turn it off: 3:44 is exact again.
 - [ ] Tap the main button repeatedly: speech never overlaps or queues.
 - [ ] Media volume at zero → the system volume panel appears instead of silent "speech".
 - [ ] Turn on «قول صباحًا ومساءً»: completion shows 2 more clips needed; after recording them the

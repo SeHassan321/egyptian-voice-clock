@@ -89,6 +89,22 @@ public class MainViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task With_rounding_on_the_hours_and_round_minutes_are_enough()
+    {
+        await _rig.UpdateSettingsAsync(s => s with { RoundToFiveMinutes = true });
+        await _rig.RecordAsync(TestCatalog.Catalog.RequiredEntries(includeDayPeriod: false, roundToFiveMinutes: true).Select(e => e.Id).ToArray());
+        _rig.Clock.Time = new TimeOnly(15, 44);
+        await _vm.OnAppearingAsync();
+
+        Assert.False(_vm.HasStatusMessage);
+
+        await _vm.AnnounceCommand.ExecuteAsync();
+
+        Assert.Single(_rig.Output.Played);
+        Assert.Equal(0, _rig.Feedback.Errors);
+    }
+
+    [Fact]
     public async Task Rapid_double_taps_speak_only_once()
     {
         await _rig.RecordAllRequiredAsync();
@@ -205,6 +221,69 @@ public class SetupViewModelTests : IDisposable
 
         Assert.Equal("0 من 73 تسجيل جاهزين", _vm.SummaryText);
         Assert.True((await new Settings.JsonSettingsRepository(_rig.Locations).LoadAsync()).Settings.IncludeDayPeriod);
+    }
+
+    [Fact]
+    public async Task Rounding_switch_is_saved_and_changes_the_preview_and_the_required_clips()
+    {
+        await _vm.OnAppearingAsync();
+        _vm.TestHourIndex = 2; // 3 o'clock
+        _vm.TestMinute = 44;
+        Assert.False(_vm.RoundToFiveMinutes);
+        Assert.Equal("هيقول: الساعة تلاتة وأربعة وأربعين دقيقة", _vm.TestPreviewText);
+
+        _vm.RoundToFiveMinutes = true;
+        await WaitUntil(() => _rig.Settings.Current.RoundToFiveMinutes);
+
+        Assert.True(_vm.RoundToFiveMinutes);
+        Assert.Equal("هيقول: الساعة أربعة إلا ربع", _vm.TestPreviewText);
+        Assert.Equal("0 من 23 تسجيل جاهزين", _vm.SummaryText);
+        Assert.True((await new Settings.JsonSettingsRepository(_rig.Locations).LoadAsync()).Settings.RoundToFiveMinutes);
+
+        // Turning it off again brings the exact minutes back (wait for the last save's change event too).
+        _vm.RoundToFiveMinutes = false;
+        await WaitUntil(() => !_rig.Settings.Current.RoundToFiveMinutes && _vm.SummaryText == "0 من 71 تسجيل جاهزين");
+        Assert.False(_vm.RoundToFiveMinutes);
+    }
+
+    [Fact]
+    public async Task Rounding_hint_shows_the_real_sentences_for_3_44()
+    {
+        await _vm.OnAppearingAsync();
+
+        Assert.Contains("3:44", _vm.RoundTimeHint);
+        Assert.Contains("«الساعة أربعة إلا ربع»", _vm.RoundTimeHint);
+        Assert.Contains("«الساعة تلاتة وأربعة وأربعين دقيقة»", _vm.RoundTimeHint);
+    }
+
+    [Fact]
+    public async Task Testing_a_time_with_rounding_on_speaks_the_rounded_time()
+    {
+        await _rig.RecordAsync("hour.04", "minute.45");
+        await _rig.UpdateSettingsAsync(s => s with { RoundToFiveMinutes = true });
+        await _vm.OnAppearingAsync();
+        _vm.TestHourIndex = 2;
+        _vm.TestMinute = 44;
+
+        await _vm.TestSelectedCommand.ExecuteAsync();
+
+        Assert.Equal("الساعة أربعة إلا ربع", _vm.Message);
+    }
+
+    [Fact]
+    public async Task With_rounding_on_nothing_else_is_missing_once_the_round_clips_exist()
+    {
+        await _rig.UpdateSettingsAsync(s => s with { RoundToFiveMinutes = true });
+        await _rig.RecordAsync(TestCatalog.Catalog.RequiredEntries(includeDayPeriod: false, roundToFiveMinutes: true).Select(e => e.Id).ToArray());
+        await _vm.OnAppearingAsync();
+
+        Assert.True(_vm.IsComplete);
+        Assert.Equal("23 من 23 تسجيل جاهزين", _vm.SummaryText);
+
+        await _vm.RecordNextMissingCommand.ExecuteAsync();
+
+        Assert.Empty(_navigation.Visits);
+        Assert.Equal(Strings.Recordings_NothingMissing, _vm.Message);
     }
 
     [Fact]
@@ -484,6 +563,25 @@ public class RecordingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task With_rounding_on_exact_minutes_become_optional_and_are_skipped()
+    {
+        await _vm.OnAppearingAsync();
+        Assert.True(Item("minute.43").NeedsAttention);
+
+        await _rig.UpdateSettingsAsync(s => s with { RoundToFiveMinutes = true });
+
+        Assert.False(Item("minute.43").NeedsAttention);
+        Assert.Equal(Strings.Status_Optional, Item("minute.43").StatusText);
+        Assert.True(Item("minute.45").NeedsAttention);
+
+        await _rig.RecordAsync(TestCatalog.Catalog.RequiredEntries(includeDayPeriod: false, roundToFiveMinutes: true)
+            .Select(e => e.Id).Where(id => id != "minute.55").ToArray());
+        await _vm.RecordNextMissingCommand.ExecuteAsync();
+
+        Assert.Equal(new[] { "recorder:minute.55" }, _navigation.Visits.ToArray());
+    }
+
+    [Fact]
     public async Task Returning_to_the_list_updates_rows_without_rebuilding_it()
     {
         await _vm.OnAppearingAsync();
@@ -733,6 +831,38 @@ public class RecordClipViewModelTests : IDisposable
 
         await _vm.CompareComposedCommand.ExecuteAsync();
         Assert.Single(_rig.Output.Played);
+    }
+
+    [Fact]
+    public async Task Comparing_a_full_sentence_uses_its_exact_time_even_when_rounding_is_on()
+    {
+        // Rounded, 1:43 would need «الساعة اتنين» and «إلا ربع», which are not recorded.
+        await _rig.RecordAsync("hour.01", "minute.43");
+        await _rig.UpdateSettingsAsync(s => s with { RoundToFiveMinutes = true });
+        await _vm.LoadAsync("phrase.01.43");
+
+        await _vm.CompareComposedCommand.ExecuteAsync();
+
+        Assert.Single(_rig.Output.Played);
+        Assert.Equal(0, _rig.Feedback.Errors);
+    }
+
+    [Fact]
+    public async Task With_rounding_on_the_guided_flow_does_not_ask_for_exact_minutes()
+    {
+        await _rig.UpdateSettingsAsync(s => s with { RoundToFiveMinutes = true });
+        await _rig.RecordAsync(TestCatalog.Catalog.RequiredEntries(includeDayPeriod: false, roundToFiveMinutes: true)
+            .Select(e => e.Id).Where(id => id != "minute.55").ToArray());
+        await _vm.LoadAsync("minute.55");
+
+        await _vm.ToggleRecordingCommand.ExecuteAsync();
+        await _vm.ToggleRecordingCommand.ExecuteAsync();
+        await _vm.SaveCommand.ExecuteAsync();
+
+        // Without rounding the recorder would move on to «ودقيقة» (minute.01).
+        Assert.True(_rig.Repository.IsAvailable("minute.55"));
+        Assert.Equal("minute.55", _vm.AssetId);
+        Assert.Equal(Strings.Recorder_Saved, _vm.Message);
     }
 
     [Fact]

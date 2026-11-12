@@ -40,7 +40,11 @@ public sealed record AudioSegment(string AssetId, string Text, SegmentRole Role)
 
 /// <summary>Options that change what the engine says.</summary>
 /// <param name="IncludeDayPeriod">Append "صباحًا" or "مساءً". Off by default.</param>
-public sealed record TimeSpeechSettings(bool IncludeDayPeriod = false)
+/// <param name="RoundToFiveMinutes">
+/// Say the nearest multiple of five minutes instead of the exact minute, so 3:44 is
+/// "الساعة أربعة إلا ربع". Off by default.
+/// </param>
+public sealed record TimeSpeechSettings(bool IncludeDayPeriod = false, bool RoundToFiveMinutes = false)
 {
     public static TimeSpeechSettings Default { get; } = new();
 }
